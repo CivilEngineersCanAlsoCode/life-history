@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "career_context",
+  "project_id": "00927298-da82-4e3b-aa86-3f61af5451f3"
+}
