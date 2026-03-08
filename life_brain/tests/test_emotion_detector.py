@@ -168,3 +168,60 @@ class TestEdgeCases:
         assert hasattr(result, "all_emotions")
         assert hasattr(result, "suggest_mental_health")
         assert hasattr(result, "suggestion_message")
+
+
+class TestCodeBlockStripping:
+    """Regression tests for issues-yrm: code blocks causing false-positive emotion detection.
+
+    Bug: code snippets containing keywords like 'overwhelmed', 'fail', 'kill', 'error'
+    were triggering false-positive stress/anxiety detection.
+    Fix: strip fenced/inline/indented code blocks before keyword matching.
+    """
+
+    def test_fenced_code_block_not_detected_as_stressed(self):
+        """Code block with stress keywords should NOT trigger stress detection."""
+        msg = (
+            "Here's the function:\n"
+            "```python\n"
+            "# This handles overwhelmed queue\n"
+            "def process(): pass\n"
+            "```"
+        )
+        result = detect_emotion(msg)
+        # Should not detect stress from code comment
+        assert result.suggest_mental_health is False
+
+    def test_inline_code_not_detected(self):
+        """Inline code with stress keywords should NOT trigger detection."""
+        msg = "Call the `overwhelmed_handler()` function to process the queue."
+        result = detect_emotion(msg)
+        assert result.suggest_mental_health is False
+
+    def test_real_stress_still_detected_after_stripping(self):
+        """Actual stress language outside code blocks should still be detected."""
+        msg = (
+            "I'm completely overwhelmed with deadlines.\n"
+            "```python\n"
+            "def calm_function(): pass\n"
+            "```"
+        )
+        result = detect_emotion(msg)
+        # Real stress keyword is outside code block — should still detect
+        assert result.primary_emotion == "stressed"
+
+    def test_indented_code_not_detected(self):
+        """4-space indented code should not trigger false detection."""
+        msg = (
+            "Here is some code:\n"
+            "    overwhelmed_queue = Queue()\n"
+            "    stressed_state = True\n"
+        )
+        result = detect_emotion(msg)
+        assert result.suggest_mental_health is False
+
+    def test_empty_after_stripping_is_neutral(self):
+        """If all content is inside code blocks, result should be neutral."""
+        msg = "```\noverwhelmed stressed anxious burnout\n```"
+        result = detect_emotion(msg)
+        assert result.primary_emotion == "neutral"
+        assert result.suggest_mental_health is False

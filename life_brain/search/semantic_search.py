@@ -72,8 +72,8 @@ class SemanticSearch:
         if not self.collection:
             return [], "Collection not initialized"
 
-        if not query and query_embedding is None:
-            return [], "Query or query_embedding required"
+        if (not query or not query.strip()) and query_embedding is None:
+            return [], "Query cannot be empty or whitespace"
 
         try:
             # Build metadata filter
@@ -99,7 +99,12 @@ class SemanticSearch:
             return search_results, None
 
         except Exception as e:
-            error_msg = f"Search failed: {str(e)}"
+            err = str(e)
+            # Non-existent metadata field values → empty result, not error
+            if "does not exist" in err or "no documents" in err.lower():
+                logger.debug(f"Metadata filter matched no documents: {err}")
+                return [], None
+            error_msg = f"Search failed: {err}"
             logger.error(error_msg)
             return [], error_msg
 

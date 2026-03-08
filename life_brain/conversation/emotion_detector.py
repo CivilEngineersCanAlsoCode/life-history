@@ -57,12 +57,31 @@ class EmotionResult:
     suggestion_message: Optional[str]  # Ready-to-display suggestion (if any)
 
 
+def _strip_code_blocks(text: str) -> str:
+    """Remove code blocks from text before sentiment analysis.
+
+    Code snippets contain keywords like 'error', 'fail', 'exception', 'kill'
+    that trigger false-positive emotion detection.
+    Strips: fenced blocks (```...```), inline code (`...`), indented code.
+    """
+    import re
+    # Remove fenced code blocks (```...```)
+    text = re.sub(r"```[\s\S]*?```", " ", text)
+    # Remove inline code (`...`)
+    text = re.sub(r"`[^`]+`", " ", text)
+    # Remove lines that look like code (4-space or tab indented)
+    lines = text.split("\n")
+    non_code = [ln for ln in lines if not ln.startswith("    ") and not ln.startswith("\t")]
+    return " ".join(non_code)
+
+
 def _score_message(message: str) -> Dict[str, float]:
     """Score a message against all emotion signal lists.
 
     Returns dict of {emotion: score} where score is 0-1.
+    Code blocks are stripped first to avoid false positives.
     """
-    lower = message.lower()
+    lower = _strip_code_blocks(message).lower()
     scores: Dict[str, float] = {}
 
     for emotion, signals in _EMOTION_SIGNALS.items():

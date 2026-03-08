@@ -170,8 +170,15 @@ class AccountabilityTracker:
         Returns:
             List of extracted Commitment objects
         """
-        full_text = " ".join(messages)
-        found = extract_commitments(full_text, session_id)
+        # Process each message independently so unpunctuated messages
+        # don't get merged into one unsplittable blob
+        found = []
+        seen_ids = set()
+        for msg in messages:
+            for c in extract_commitments(msg, session_id):
+                if c.commitment_id not in seen_ids:
+                    found.append(c)
+                    seen_ids.add(c.commitment_id)
         for c in found:
             self.commitments[c.commitment_id] = c
         return found

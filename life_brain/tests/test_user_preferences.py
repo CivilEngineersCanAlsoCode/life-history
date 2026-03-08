@@ -232,3 +232,70 @@ class TestExportReset:
         assert mgr.preferences.language == "hinglish"
         assert mgr.preferences.preferred_experts == []
         assert mgr.preferences.update_count == 0
+
+
+class TestSaveToDisk:
+    """Regression tests for issues-36e: preferences auto-save IOError handling.
+
+    Bug: no storage_path param and no error handling when disk write fails.
+    Fix: optional storage_path, save_to_disk() with IOError catch + logger.error().
+    """
+
+    def test_no_storage_path_returns_true(self):
+        """save_to_disk() with no path configured should return True (no-op)."""
+        mgr = UserPreferenceManager()
+        result = mgr.save_to_disk()
+        assert result is True
+
+    def test_save_to_disk_writes_file(self, tmp_path):
+        """save_to_disk() should write valid JSON to configured path."""
+        import json
+        path = str(tmp_path / "prefs.json")
+        mgr = UserPreferenceManager(storage_path=path)
+        mgr.set_language("english")
+
+        result = mgr.save_to_disk()
+
+        assert result is True
+        with open(path) as f:
+            data = json.load(f)
+        assert data["language"] == "english"
+
+    def test_save_to_disk_ioerror_returns_false(self, tmp_path):
+        """save_to_disk() should return False (not raise) on IOError."""
+        bad_path = str(tmp_path / "nonexistent_dir" / "prefs.json")
+        mgr = UserPreferenceManager(storage_path=bad_path)
+
+        result = mgr.save_to_disk()
+
+        assert result is False
+
+    def test_save_to_disk_ioerror_stores_error(self, tmp_path):
+        """save_to_disk() should store error message on IOError."""
+        bad_path = str(tmp_path / "nonexistent_dir" / "prefs.json")
+        mgr = UserPreferenceManager(storage_path=bad_path)
+        mgr.save_to_disk()
+
+        assert mgr._last_save_error is not None
+
+    def test_bump_update_calls_save(self, tmp_path):
+        """_bump_update() (called by set_language etc.) should auto-save to disk."""
+        import json
+        path = str(tmp_path / "prefs.json")
+        mgr = UserPreferenceManager(storage_path=path)
+
+        mgr.set_language("hindi")
+
+        with open(path) as f:
+            data = json.load(f)
+        assert data["language"] == "hindi"
+
+    def test_successful_save_clears_last_error(self, tmp_path):
+        """After a successful save, _last_save_error should be None."""
+        path = str(tmp_path / "prefs.json")
+        mgr = UserPreferenceManager(storage_path=path)
+        mgr._last_save_error = "stale error"
+
+        mgr.save_to_disk()
+
+        assert mgr._last_save_error is None

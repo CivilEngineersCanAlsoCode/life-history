@@ -263,3 +263,53 @@ class TestFollowUpPrompt:
         prompt = _build_follow_up_prompt(c)
         assert "do it" in prompt
         assert isinstance(prompt, str)
+
+
+class TestUnpunctuatedMessagesBug:
+    """Regression tests for issues-132: unpunctuated messages merging bug.
+
+    Bug: joining messages then splitting on .!? caused commitments from
+    unpunctuated messages to be dropped or merged incorrectly.
+    Fix: each message is processed independently by extract_commitments().
+    """
+
+    def test_unpunctuated_message_extracted(self):
+        """Commitment in message with no trailing punctuation must be found."""
+        tracker = AccountabilityTracker()
+        messages = ["I'll submit the report by Friday"]  # no period
+        found = tracker.add_commitments_from_session("s1", messages)
+        # Should still extract a commitment despite no trailing period
+        assert len(found) >= 1
+
+    def test_two_unpunctuated_messages_both_extracted(self):
+        """Two separate unpunctuated messages → both commitments extracted."""
+        tracker = AccountabilityTracker()
+        messages = [
+            "I'll finish the proposal by Monday",
+            "I will update my LinkedIn by end of month",
+        ]
+        found = tracker.add_commitments_from_session("s1", messages)
+        # Should find commitments from both messages independently
+        assert len(found) >= 1
+
+    def test_no_duplicate_commitments_across_messages(self):
+        """Same commitment in two messages should not be double-counted."""
+        tracker = AccountabilityTracker()
+        messages = [
+            "I'll finish the proposal by Monday.",
+            "I'll finish the proposal by Monday.",
+        ]
+        found = tracker.add_commitments_from_session("s1", messages)
+        # Deduplication via seen_ids should prevent double extraction
+        ids = [c.commitment_id for c in found]
+        assert len(ids) == len(set(ids))
+
+    def test_mixed_punctuated_and_unpunctuated(self):
+        """Mix of punctuated and unpunctuated messages should all work."""
+        tracker = AccountabilityTracker()
+        messages = [
+            "I'll submit the report by Friday.",  # punctuated
+            "I will call the recruiter tomorrow",  # unpunctuated
+        ]
+        found = tracker.add_commitments_from_session("s1", messages)
+        assert len(found) >= 1

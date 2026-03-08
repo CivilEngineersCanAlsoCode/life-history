@@ -322,6 +322,32 @@ class TestSemanticSearch:
         assert error is not None
         assert "ChromaDB error" in error
 
+    def test_whitespace_only_query_rejected(self):
+        """issues-e6m: whitespace-only query must return error, not crash."""
+        mock_collection = Mock()
+        search = SemanticSearch(collection=mock_collection)
+
+        results, error = search.search("   ", query_embedding=None)
+
+        assert len(results) == 0
+        assert error is not None
+        assert "empty" in error.lower() or "whitespace" in error.lower()
+        # Collection should NOT be called
+        mock_collection.query.assert_not_called()
+
+    def test_nonexistent_domain_returns_empty_not_error(self):
+        """issues-ed3: querying a non-existent domain should return [] with no error."""
+        mock_collection = Mock()
+        mock_collection.query.side_effect = Exception(
+            "Value 'does not exist' does not exist in column"
+        )
+        search = SemanticSearch(collection=mock_collection)
+
+        results, error = search.search("career advice", domain="nonexistent_domain")
+
+        assert len(results) == 0
+        assert error is None  # Graceful empty return, not an error
+
     def test_complete_search_workflow(self):
         """Test complete search workflow."""
         mock_collection = Mock()

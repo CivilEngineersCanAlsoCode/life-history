@@ -8,6 +8,11 @@ response format, and custom settings. Improves with repeated use.
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
+import json
+import logging
+import os
+
+logger = logging.getLogger(__name__)
 
 
 # Valid values for enumerated preferences
@@ -54,8 +59,10 @@ class UserPreferences:
 class UserPreferenceManager:
     """Manage and persist user preferences."""
 
-    def __init__(self):
+    def __init__(self, storage_path: Optional[str] = None):
         self._preferences: UserPreferences = UserPreferences()
+        self._storage_path: Optional[str] = storage_path
+        self._last_save_error: Optional[str] = None
 
     @property
     def preferences(self) -> UserPreferences:
@@ -188,7 +195,26 @@ class UserPreferenceManager:
         """Reset to defaults."""
         self._preferences = UserPreferences()
 
+    def save_to_disk(self) -> bool:
+        """Persist preferences to disk if storage_path is set.
+
+        Returns:
+            True if saved successfully (or no path configured), False on error.
+        """
+        if not self._storage_path:
+            return True
+        try:
+            with open(self._storage_path, "w") as f:
+                json.dump(self.export(), f, indent=2)
+            self._last_save_error = None
+            return True
+        except (IOError, OSError) as e:
+            self._last_save_error = str(e)
+            logger.error(f"Preferences auto-save failed: {e}")
+            return False
+
     def _bump_update(self) -> None:
         """Increment update counter and update timestamp."""
         self._preferences.update_count += 1
         self._preferences.last_updated = datetime.now().isoformat()
+        self.save_to_disk()
