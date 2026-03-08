@@ -14,6 +14,13 @@ from dataclasses import dataclass
 from enum import Enum
 import logging
 import math
+import time
+
+# E5 imports for truth engine integration
+from life_brain.truth_engine.conflict_detector import ConflictDetector, ConflictResult
+from life_brain.truth_engine.credibility_scorer import CredibilityScorer, CredibilityScore
+from life_brain.truth_engine.synthesis_engine import SynthesisEngine, SynthesisResult
+from life_brain.truth_engine.hallucination_prevention import HallucinationPrevention, ValidationResult
 
 logger = logging.getLogger(__name__)
 
@@ -283,38 +290,120 @@ class OutputGenerator:
         groundedness: GroundednessScore,
         documents: List[RetrievedDocument],
         language: str = "hinglish",
+        user_query: Optional[str] = None,
+        enable_e5_integration: bool = True,
     ) -> Dict[str, Any]:
         """
-        Generate final output with appropriate confidence indicators.
+        Generate final output WITH E5 truth engine integration.
+
+        Pipeline:
+        1. Detect conflicts (F5.1)
+        2. Score credibility (F5.2)
+        3. Synthesize with awareness (F5.3)
+        4. Validate answer (F5.4)
+        5. Return result with E5 metadata
 
         Args:
             answer: Base answer text
             groundedness: Groundedness score
-            documents: Supporting documents
+            documents: Supporting documents (1-3)
             language: Output language ("english" or "hinglish")
+            user_query: User's original query (for context)
+            enable_e5_integration: If False, skip E5 and use legacy path
 
         Returns:
-            Dict with output, confidence, and metadata
+            Dict with output, confidence, E5 metadata, and validation results
         """
         output_type = groundedness.output_type()
         confidence = groundedness.confidence_level()
 
-        prompt_prefix, prompt_suffix = OutputGenerator.PROMPTS[output_type]
+        # Initialize E5 integration data
+        conflicts: List[ConflictResult] = []
+        credibility_scores: List[CredibilityScore] = []
+        synthesis_result: Optional[SynthesisResult] = None
+        validation: Optional[ValidationResult] = None
+        final_answer = answer
 
-        # Generate confidence-qualified output
-        if output_type == OutputType.DIRECT_ANSWER:
-            final_answer = answer
-        elif output_type == OutputType.QUALIFIED_ANSWER:
-            final_answer = answer + prompt_suffix
-        elif output_type == OutputType.UNCERTAIN_ANSWER:
-            final_answer = answer + prompt_suffix
-        else:  # NO_MATCH
-            final_answer = prompt_suffix
+        # ====================================================================
+        # E5 INTEGRATION: Run truth engine pipeline
+        # ====================================================================
+        if enable_e5_integration and documents:
+            start_time = time.time()
 
-        # Add attribution
-        final_answer = OutputGenerator.format_attribution(answer, documents, groundedness)
+            try:
+                # Step 1: F5.1 - Detect conflicts
+                detector = ConflictDetector()
+                conflicts = detector.detect_conflicts(documents)
+                logger.debug(f"Detected {len(conflicts)} conflicts in {len(documents)} documents")
 
-        return {
+                # Step 2: F5.2 - Score credibility of each document
+                scorer = CredibilityScorer()
+                credibility_scores = []
+                for doc in documents:
+                    score = scorer.score_source(doc)
+                    credibility_scores.append(score)
+                logger.debug(f"Scored credibility for {len(credibility_scores)} documents")
+
+                # Step 3: F5.3 - Synthesize answer if conflicts exist
+                if conflicts:
+                    synthesis_engine = SynthesisEngine()
+                    synthesis_result = synthesis_engine.synthesize(
+                        documents, conflicts, credibility_scores
+                    )
+                    final_answer = synthesis_result.answer
+                    if synthesis_result.disclaimer:
+                        final_answer += f"\n\n{synthesis_result.disclaimer}"
+                    logger.debug(f"Synthesis strategy: {synthesis_result.strategy}")
+                else:
+                    # No conflicts, use original answer
+                    synthesis_result = SynthesisResult(
+                        answer=answer,
+                        strategy="agree",
+                        conflicts_handled=[],
+                        preferred_sources=[d.doc_id for d in documents],
+                        disclaimer=None,
+                        attribution=""
+                    )
+
+                # Step 4: F5.4 - Validate answer
+                validator = HallucinationPrevention()
+                validation_context = {
+                    "groundedness_score": groundedness.overall_score,
+                    "conflicts": conflicts,
+                    "credibility_scores": credibility_scores,
+                    "user_query": user_query or "",
+                }
+                validation = validator.validate_answer(final_answer, documents, validation_context)
+                logger.debug(f"Validation result: is_valid={validation.is_valid}")
+
+                # Step 5: Decision gate - if validation fails, return "I don't know"
+                if not validation.is_valid and validation.rejection_reason:
+                    final_answer = f"I don't have enough information: {validation.rejection_reason}"
+                    logger.debug(f"Validation rejected answer: {validation.rejection_reason}")
+
+            except Exception as e:
+                logger.error(f"Error in E5 integration pipeline: {e}", exc_info=True)
+                # Fall back to original answer on E5 errors
+                final_answer = answer
+                validation = ValidationResult(
+                    is_valid=False,
+                    passed_rules=[],
+                    violated_rules=[],
+                    rejection_reason=f"Error in truth engine: {str(e)}"
+                )
+
+            e5_latency = time.time() - start_time
+            logger.info(f"E5 pipeline completed in {e5_latency*1000:.1f}ms")
+
+        # ====================================================================
+        # EXISTING: Format attribution
+        # ====================================================================
+        final_answer = OutputGenerator.format_attribution(final_answer, documents, groundedness)
+
+        # ====================================================================
+        # BUILD RESPONSE
+        # ====================================================================
+        response: Dict[str, Any] = {
             "output": final_answer,
             "output_type": output_type.value,
             "confidence_level": confidence.value,
@@ -334,6 +423,44 @@ class OutputGenerator:
                 for d in documents[:3]
             ],
         }
+
+        # Add E5 metadata if integration is enabled
+        if enable_e5_integration:
+            response["e5_integration"] = {
+                "conflicts": [
+                    {
+                        "doc_pair": c.doc_pair,
+                        "conflict_score": round(c.conflict_score, 2),
+                        "conflict_type": c.conflict_type.value if hasattr(c.conflict_type, "value") else str(c.conflict_type),
+                        "severity": c.severity,
+                        "explanation": c.explanation,
+                    }
+                    for c in conflicts
+                ],
+                "credibility_scores": [
+                    {
+                        "doc_id": cs.doc_id,
+                        "credibility": cs.credibility,
+                        "category": cs.category,
+                        "recency_score": cs.recency_score,
+                        "authority_score": cs.authority_score,
+                        "accuracy_score": cs.accuracy_score,
+                    }
+                    for cs in credibility_scores
+                ],
+                "synthesis": {
+                    "strategy": synthesis_result.strategy if synthesis_result else "unknown",
+                    "disclaimer": synthesis_result.disclaimer if synthesis_result else None,
+                },
+                "validation": {
+                    "is_valid": validation.is_valid if validation else None,
+                    "passed_rules": validation.passed_rules if validation else [],
+                    "rejected_rules": [v.rule_name for v in validation.violated_rules] if validation else [],
+                    "rejection_reason": validation.rejection_reason if validation else None,
+                } if validation else None,
+            }
+
+        return response
 
 
 class SynthesisLimiter:
