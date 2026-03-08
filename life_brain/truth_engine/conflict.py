@@ -31,6 +31,9 @@ class ConflictResult:
     existing_pair_id: Optional[str] = None
     existing_answer: Optional[str] = None
     contradiction_type: Optional[str] = None
+    existing_entry_date: Optional[str] = None  # When existing entry was stored
+    existing_context: Optional[str] = None  # Context qualifier for existing entry
+    existing_doc_id: Optional[str] = None  # Alias for existing_pair_id for compatibility
 
 
 def calculate_semantic_similarity(embed_new: List[float], embed_existing: List[float]) -> float:
