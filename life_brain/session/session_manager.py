@@ -9,6 +9,7 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+import uuid
 
 
 class SessionStatus(Enum):
@@ -17,6 +18,40 @@ class SessionStatus(Enum):
     ACTIVE = "active"
     PAUSED = "paused"
     CLOSED = "closed"
+
+
+# ── New session model (used by continuity.py and tests) ─────────────────────
+
+@dataclass
+class SessionMessage:
+    """A single message in a session."""
+    role: str   # "user" or "assistant"
+    content: str
+    timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
+
+
+@dataclass
+class SessionMetadata:
+    """Session metadata."""
+    session_id: str
+    user_id: str
+    mode: str = "small_talk"  # "small_talk" or "guided"
+    created_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    status: str = "active"
+
+
+@dataclass
+class Session:
+    """Full session with messages and state."""
+    session_id: str
+    user_id: str
+    metadata: SessionMetadata
+    messages: List[SessionMessage] = field(default_factory=list)
+    current_expert: Optional[str] = None
+    current_use_case_id: Optional[str] = None
+    captured_nuggets: List[Any] = field(default_factory=list)
+    extra_context: Dict[str, Any] = field(default_factory=dict)
+    created_at: str = field(default_factory=lambda: datetime.now().isoformat())
 
 
 @dataclass
@@ -57,11 +92,63 @@ class SessionContext:
 class SessionManager:
     """Manage user sessions."""
 
-    def __init__(self):
-        """Initialize session manager."""
+    def __init__(self, storage_path: Optional[str] = None):
+        """Initialize session manager.
+
+        Args:
+            storage_path: Optional directory path for session storage (unused in-memory).
+        """
+        self.storage_path = storage_path
         self.sessions: Dict[str, SessionContext] = {}  # session_id -> SessionContext
         self.user_sessions: Dict[str, List[str]] = {}  # user_id -> [session_ids]
         self.session_history: Dict[str, List[Dict[str, Any]]] = {}  # session_id -> history
+
+        # New session store (Session objects)
+        self._sessions: Dict[str, Session] = {}
+
+    # ── New API ──────────────────────────────────────────────────────────────
+
+    def create_session(self, user_id: str = "default") -> "Session":
+        """Create a new Session object."""
+        session_id = str(uuid.uuid4())
+        metadata = SessionMetadata(session_id=session_id, user_id=user_id)
+        session = Session(
+            session_id=session_id,
+            user_id=user_id,
+            metadata=metadata,
+        )
+        self._sessions[session_id] = session
+        if user_id not in self.user_sessions:
+            self.user_sessions[user_id] = []
+        self.user_sessions[user_id].append(session_id)
+        return session
+
+    def add_message(self, session: "Session", role: str, content: str) -> "SessionMessage":
+        """Add a message to a session."""
+        msg = SessionMessage(role=role, content=content)
+        session.messages.append(msg)
+        return msg
+
+    def save_session(self, session: "Session") -> None:
+        """Persist session (in-memory store)."""
+        self._sessions[session.session_id] = session
+
+    def load_session(self, session_id: str) -> Optional["Session"]:
+        """Load session by ID."""
+        return self._sessions.get(session_id)
+
+    def list_sessions(
+        self,
+        user_id: Optional[str] = None,
+        active_only: bool = True,
+    ) -> List["SessionMetadata"]:
+        """List sessions, optionally filtered by user."""
+        sessions = list(self._sessions.values())
+        if user_id:
+            sessions = [s for s in sessions if s.user_id == user_id]
+        if active_only:
+            sessions = [s for s in sessions if s.metadata.status == "active"]
+        return [s.metadata for s in sessions]
 
     def session_init(
         self,
