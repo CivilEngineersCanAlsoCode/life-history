@@ -4,3 +4,7 @@ __pycache__/
 venv/
 .tmp/
 *.pyc
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
