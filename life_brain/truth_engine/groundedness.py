@@ -62,7 +62,7 @@ class GroundednessScore:
             return ConfidenceLevel.HIGH
         elif self.overall_score > 0.70:
             return ConfidenceLevel.MEDIUM
-        elif self.overall_score > 0.50:
+        elif self.overall_score >= 0.50:
             return ConfidenceLevel.LOW
         else:
             return ConfidenceLevel.INSUFFICIENT
@@ -73,7 +73,7 @@ class GroundednessScore:
             return OutputType.DIRECT_ANSWER
         elif self.overall_score > 0.70:
             return OutputType.QUALIFIED_ANSWER
-        elif self.overall_score > 0.50:
+        elif self.overall_score >= 0.50:
             return OutputType.UNCERTAIN_ANSWER
         else:
             return OutputType.NO_MATCH
