@@ -444,3 +444,50 @@ class TestValidationReporting:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class TestNullQAValidation:
+    """Regression tests for issues-6vx.1.20: null pointer when validating empty answer.
+
+    Bug: validate_question_answer(None, None) crashes at len(None) on the
+    second question check (max_length guard) even after the first check caught None.
+    Fix: guard second check with `if question and len(question) > max_length`.
+    Similarly for answer.
+    """
+
+    def test_validate_qa_null_question_no_crash(self):
+        """validate_question_answer(None, ...) must not raise TypeError."""
+        from life_brain.db.document_validator import DocumentValidator
+        # Should return errors, not crash
+        valid, errors = DocumentValidator.validate_question_answer(None, None)
+        assert valid is False
+        assert len(errors) > 0
+
+    def test_validate_qa_empty_question_no_crash(self):
+        """validate_question_answer('', ...) must not raise TypeError."""
+        from life_brain.db.document_validator import DocumentValidator
+        valid, errors = DocumentValidator.validate_question_answer("", "")
+        assert valid is False
+        assert len(errors) > 0
+
+    def test_validate_qa_null_answer_no_crash(self):
+        """validate_question_answer(valid_q, None) must not raise."""
+        from life_brain.db.document_validator import DocumentValidator
+        valid, errors = DocumentValidator.validate_question_answer("What is the project?", None)
+        assert valid is False
+        assert len(errors) > 0
+
+    def test_validate_qa_empty_answer_no_crash(self):
+        """validate_question_answer(valid_q, '') must not crash."""
+        from life_brain.db.document_validator import DocumentValidator
+        valid, errors = DocumentValidator.validate_question_answer("What is the project scope?", "")
+        assert valid is False
+
+    def test_validate_qa_valid_pair_still_works(self):
+        """Normal valid Q&A should still pass validation after fix."""
+        from life_brain.db.document_validator import DocumentValidator
+        q = "What is the primary goal of the CRR AML Risk Scoring Engine project?"
+        a = "The primary goal is to detect and score money laundering risk across customer accounts using machine learning models to improve detection accuracy."
+        valid, errors = DocumentValidator.validate_question_answer(q, a)
+        assert valid is True
+        assert len(errors) == 0

@@ -221,6 +221,9 @@ class GroundednessCalculator:
             self.WEIGHTS["consistency"] * consistency
         )
 
+        # Clamp before coverage modifier so modifier works on a valid [0,1] base
+        overall_score = min(1.0, max(0.0, overall_score))
+
         # Apply coverage as modifier (if coverage is low, reduce overall score)
         if coverage < 0.5:
             overall_score *= (0.5 + coverage)  # Reduce by up to 50%

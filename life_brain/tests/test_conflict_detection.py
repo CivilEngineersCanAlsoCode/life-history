@@ -734,3 +734,37 @@ class TestDocumentation:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])
+
+
+class TestConflictScoreClamping:
+    """Regression tests for issues-bd7.1.20: conflict_score can exceed 1.0.
+
+    Bug: detect_conflicts() stores similarity * contradiction unclamped.
+    Fix: clamp to [0, 1] before storing in ConflictResult.
+    """
+
+    def test_score_conflict_always_clamped(self):
+        """score_conflict() must always return value in [0, 1]."""
+        detector = ConflictDetector()
+        # Both identical very-long strings → similarity near 1.0 × contradiction 0
+        score = detector.score_conflict("test claim A", "test claim A")
+        assert 0.0 <= score <= 1.0
+
+    def test_conflict_score_in_result_clamped(self):
+        """conflict_score stored in ConflictResult must be in [0, 1]."""
+        detector = ConflictDetector()
+        doc1 = type("Doc", (), {"text": "I led the redesign of the entire system", "embedding": None})()
+        doc2 = type("Doc", (), {"text": "I contributed to the system improvements", "embedding": None})()
+        results = detector.detect_conflicts([doc1, doc2])
+        for r in results:
+            assert 0.0 <= r.conflict_score <= 1.0, f"conflict_score {r.conflict_score} out of range"
+
+    def test_opposing_claims_score_at_most_1(self):
+        """Maximum opposition should produce score ≤ 1.0, never exceed."""
+        detector = ConflictDetector()
+        # Maximally opposing claims
+        score = detector.score_conflict(
+            "The project was a complete success",
+            "The project was a complete failure"
+        )
+        assert 0.0 <= score <= 1.0

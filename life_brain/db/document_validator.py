@@ -229,7 +229,7 @@ class DocumentValidator:
             )
             errors.append(error)
 
-        if len(question) > DocumentValidator.CONSTRAINTS["question_max_length"]:
+        if question and len(question) > DocumentValidator.CONSTRAINTS["question_max_length"]:
             error = ValidationError(
                 category="range",
                 field="question",
@@ -254,7 +254,7 @@ class DocumentValidator:
             )
             errors.append(error)
 
-        if len(answer) > DocumentValidator.CONSTRAINTS["answer_max_length"]:
+        if answer and len(answer) > DocumentValidator.CONSTRAINTS["answer_max_length"]:
             error = ValidationError(
                 category="range",
                 field="answer",

@@ -146,8 +146,10 @@ class ConflictDetector:
                             claim1, claim2
                         )
 
-                        # Calculate conflict score
-                        conflict_score = similarity * contradiction
+                        # Calculate conflict score — clamp to [0,1] defensively
+                        # (similarity or contradiction can slightly exceed 1.0 due to
+                        # floating-point arithmetic)
+                        conflict_score = min(1.0, max(0.0, similarity * contradiction))
 
                         # Skip very low scores
                         if conflict_score < 0.1:

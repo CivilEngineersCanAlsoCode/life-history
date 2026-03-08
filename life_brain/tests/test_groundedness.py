@@ -255,3 +255,34 @@ class TestEdgeCases:
         specific_g = scorer.score_result(specific)
 
         assert specific_g.content_weight >= generic_g.content_weight
+
+
+class TestOverallScoreClamping:
+    """Regression tests for issues-bd7.4.13: coverage modifier can cause overall_score > 1.0.
+
+    Bug: No pre-clamp before coverage modifier was applied.
+    Fix: clamp overall_score to [0, 1] before coverage modifier is applied.
+    """
+
+    def test_overall_score_never_exceeds_1(self):
+        """overall_score must always be ≤ 1.0 regardless of inputs."""
+        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        calc = GroundednessCalculator()
+        docs = [
+            RetrievedDocument(doc_id="d1", text="great result success", metadata={}, similarity_score=1.0),
+            RetrievedDocument(doc_id="d2", text="success outcome achieved", metadata={}, similarity_score=1.0),
+            RetrievedDocument(doc_id="d3", text="leading result supported", metadata={}, similarity_score=1.0),
+        ]
+        score = calc.calculate_groundedness(docs, query_keywords=["success", "result", "great"])
+        assert score.overall_score <= 1.0
+        assert score.overall_score >= 0.0
+
+    def test_overall_score_never_below_0(self):
+        """overall_score must always be ≥ 0.0."""
+        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        calc = GroundednessCalculator()
+        docs = [
+            RetrievedDocument(doc_id="d1", text="something", metadata={}, similarity_score=0.0),
+        ]
+        score = calc.calculate_groundedness(docs, query_keywords=["unrelated"])
+        assert score.overall_score >= 0.0
