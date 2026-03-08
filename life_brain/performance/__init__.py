@@ -30,6 +30,14 @@ from life_brain.performance.concurrent_testing import (
     ConcurrentIngestionTest,
     ConcurrentTestResult,
 )
+from life_brain.performance.resilience_testing import (
+    ErrorCategory,
+    RetryAttempt,
+    DeadletterEntry,
+    ResilienceTestResult,
+    RetryPolicy,
+    ResilienceTest,
+)
 
 __all__ = [
     # Load testing
@@ -51,4 +59,11 @@ __all__ = [
     "MemoryMonitor",
     "ConcurrentIngestionTest",
     "ConcurrentTestResult",
+    # Resilience testing
+    "ErrorCategory",
+    "RetryAttempt",
+    "DeadletterEntry",
+    "ResilienceTestResult",
+    "RetryPolicy",
+    "ResilienceTest",
 ]
