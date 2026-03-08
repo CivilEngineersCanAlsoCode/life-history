@@ -296,11 +296,22 @@ def query_with_privacy_firewall(
     Returns:
         Filtered data (only from expert's allowed domains)
     """
-    # TODO: Implement
-    # Get allowed domains from EXPERT_DATA_ACCESS[expert_name]
-    # Filter available_data to only those domains
-    # Return filtered list
-    pass
+    # Get allowed domains for this expert
+    allowed_domains = EXPERT_DATA_ACCESS.get(expert_name, [])
+
+    if not allowed_domains:
+        return []  # Expert has no access
+
+    # Filter available_data by domain
+    filtered_data = []
+
+    for item in available_data:
+        if isinstance(item, dict):
+            domain = item.get("domain")
+            if domain in allowed_domains:
+                filtered_data.append(item)
+
+    return filtered_data
 
 
 def get_expert(expert_name: str) -> Optional[Dict[str, Any]]:
@@ -313,8 +324,27 @@ def get_expert(expert_name: str) -> Optional[Dict[str, Any]]:
     Returns:
         Expert dict or None
     """
-    # TODO: Implement
-    # Search EXPERTS dict by name
-    # Support both "satya_nadella" and "Satya Nadella"
-    # Return expert dict or None
-    pass
+    if not expert_name:
+        return None
+
+    # Normalize input (lowercase, handle underscores and spaces)
+    normalized_input = expert_name.lower().strip()
+    normalized_input = normalized_input.replace(" ", "_")
+
+    # Check direct key match
+    if normalized_input in EXPERTS:
+        return EXPERTS[normalized_input]
+
+    # Check by real_name (e.g., "Satya Nadella" → find "satya_nadella")
+    for key, expert_dict in EXPERTS.items():
+        real_name = expert_dict.get("real_name", "")
+        if real_name.lower() == expert_name.lower():
+            return expert_dict
+
+    # Partial match fallback
+    for key, expert_dict in EXPERTS.items():
+        real_name = expert_dict.get("real_name", "")
+        if normalized_input in key or normalized_input in real_name.lower().replace(" ", "_"):
+            return expert_dict
+
+    return None
