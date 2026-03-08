@@ -296,3 +296,107 @@ def wrap_up_flow(state: FlowState) -> Dict[str, Any]:
     logger.info(f"Flow wrapped up: {state.mode} mode, {len(state.captured_nuggets)} captures")
 
     return result
+
+
+def orchestrate_flow(
+    user_message: str,
+    mode: str,
+    use_case_id: Optional[str] = None,
+    expert_name: Optional[str] = None,
+    detector: Optional[IntentDetector] = None,
+    state: Optional[FlowState] = None
+) -> Dict[str, Any]:
+    """
+    Main orchestration function: Route to appropriate flow based on mode.
+
+    This is the entry point that coordinates between mode detection and flow execution.
+
+    Args:
+        user_message: User's input message
+        mode: "small_talk" or "guided"
+        use_case_id: Use case ID (required for guided, optional for small_talk)
+        expert_name: Expert name (optional, use case determines default)
+        detector: Optional existing IntentDetector (for session continuity)
+        state: Optional existing FlowState (for multi-turn continuity)
+
+    Returns:
+        Dict with:
+        - mode: Confirmed mode
+        - system_message: Response to user
+        - next_action: What to do next
+        - state: FlowState for continuity
+        - captured_nuggets: Any extracted info
+        - expert_suggestion: If offering expert (small talk mode)
+    """
+    if mode == "small_talk":
+        logger.info("Routing to small_talk_flow")
+        return small_talk_flow(user_message, detector=detector, state=state)
+
+    elif mode == "guided":
+        if not use_case_id:
+            raise ValueError("use_case_id required for guided mode")
+
+        logger.info(f"Routing to guided_flow: use_case={use_case_id}, expert={expert_name}")
+
+        # If no state yet, start new guided flow
+        if state is None or state.current_use_case_id != use_case_id:
+            return guided_flow(use_case_id, expert_name=expert_name, state=state)
+
+        # If already in guided mode, process the answer
+        return process_guided_answer(user_message, state, expert_name=expert_name)
+
+    else:
+        raise ValueError(f"Unknown mode: {mode}")
+
+
+def guided_flow_entry_point(
+    conversation_entry_result: Dict[str, Any],
+    user_message: str,
+    detector: Optional[IntentDetector] = None,
+    state: Optional[FlowState] = None
+) -> Dict[str, Any]:
+    """
+    Entry point for guided flow, integrating with conversation_entry() result.
+
+    This function:
+    1. Takes the result from conversation_entry()
+    2. Determines if flow should start or continue
+    3. Routes to appropriate flow function
+    4. Returns integrated result
+
+    Args:
+        conversation_entry_result: Result from conversation_entry()
+        user_message: Original user message
+        detector: Optional existing IntentDetector
+        state: Optional existing FlowState
+
+    Returns:
+        Dict with integrated conversation state and next action
+    """
+    mode = conversation_entry_result.get("mode")
+    use_case_id = conversation_entry_result.get("use_case_id")
+    expert_name = None
+
+    logger.info(f"guided_flow_entry_point: mode={mode}, use_case={use_case_id}")
+
+    # If use case found, extract expert
+    if use_case_id:
+        use_case = get_use_case(use_case_id)
+        if use_case:
+            expert_name = use_case.get("expert")
+
+    # Orchestrate to appropriate flow
+    flow_result = orchestrate_flow(
+        user_message=user_message,
+        mode=mode,
+        use_case_id=use_case_id,
+        expert_name=expert_name,
+        detector=detector,
+        state=state
+    )
+
+    # Merge with conversation_entry_result for complete context
+    flow_result["initial_detection"] = conversation_entry_result
+    flow_result["detector"] = detector or conversation_entry_result.get("detector")
+
+    return flow_result
