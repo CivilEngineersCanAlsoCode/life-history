@@ -288,3 +288,32 @@ class CareerMetadataManager:
             )
 
         return None
+
+    @staticmethod
+    def field_enforcement(metadata: Dict[str, Any]) -> Tuple[bool, List[str]]:
+        """
+        Enforce career field requirements for domain=career documents.
+
+        For documents with domain="career", all required career fields must be present.
+        Returns validation result with specific enforcement errors.
+
+        Args:
+            metadata: Full metadata dictionary
+
+        Returns:
+            (is_valid, list_of_errors) where errors detail missing career fields
+        """
+        errors = []
+
+        # Check if document is career domain
+        domain = metadata.get("domain", "").lower()
+
+        if domain == "career":
+            # For career documents, enforce all required fields
+            for field in CareerMetadataManager.REQUIRED_FIELDS:
+                if field not in metadata or not metadata[field]:
+                    errors.append(
+                        f"Career domain enforcement: required field '{field}' is missing or empty"
+                    )
+
+        return len(errors) == 0, errors

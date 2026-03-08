@@ -204,6 +204,94 @@ class TestCareerMetadataManager:
         career = CareerMetadataManager.get_career_fields_from_metadata(metadata)
         assert career is None
 
+    def test_field_enforcement_career_domain_valid(self):
+        """Test field enforcement passes for valid career domain."""
+        metadata = {
+            "domain": "career",
+            "company_name": "American Express",
+            "project_name": "CRR",
+            "role_title": "PM",
+            "date_range": "2024-2025",
+        }
+
+        is_valid, errors = CareerMetadataManager.field_enforcement(metadata)
+        assert is_valid is True
+        assert len(errors) == 0
+
+    def test_field_enforcement_career_domain_missing_company(self):
+        """Test field enforcement fails when company missing in career domain."""
+        metadata = {
+            "domain": "career",
+            "project_name": "CRR",
+            "role_title": "PM",
+            "date_range": "2024-2025",
+        }
+
+        is_valid, errors = CareerMetadataManager.field_enforcement(metadata)
+        assert is_valid is False
+        assert any("company_name" in e for e in errors)
+
+    def test_field_enforcement_career_domain_missing_multiple(self):
+        """Test field enforcement reports all missing fields."""
+        metadata = {
+            "domain": "career",
+            "company_name": "American Express",
+        }
+
+        is_valid, errors = CareerMetadataManager.field_enforcement(metadata)
+        assert is_valid is False
+        assert len(errors) == 3  # Missing project_name, role_title, date_range
+
+    def test_field_enforcement_non_career_domain(self):
+        """Test field enforcement skips non-career domains."""
+        metadata = {
+            "domain": "learning",
+            # No career fields required
+        }
+
+        is_valid, errors = CareerMetadataManager.field_enforcement(metadata)
+        assert is_valid is True
+        assert len(errors) == 0
+
+    def test_field_enforcement_no_domain(self):
+        """Test field enforcement skips documents without domain."""
+        metadata = {
+            "source": "resume",
+            # No domain specified, no enforcement
+        }
+
+        is_valid, errors = CareerMetadataManager.field_enforcement(metadata)
+        assert is_valid is True
+        assert len(errors) == 0
+
+    def test_field_enforcement_career_empty_fields(self):
+        """Test field enforcement detects empty string fields."""
+        metadata = {
+            "domain": "career",
+            "company_name": "",  # Empty
+            "project_name": "CRR",
+            "role_title": "PM",
+            "date_range": "2024-2025",
+        }
+
+        is_valid, errors = CareerMetadataManager.field_enforcement(metadata)
+        assert is_valid is False
+        assert any("company_name" in e for e in errors)
+
+    def test_field_enforcement_case_insensitive_domain(self):
+        """Test field enforcement is case-insensitive for domain."""
+        metadata = {
+            "domain": "CAREER",
+            "company_name": "Google",
+            "project_name": "Project X",
+            "role_title": "Engineer",
+            "date_range": "2020-2024",
+        }
+
+        is_valid, errors = CareerMetadataManager.field_enforcement(metadata)
+        assert is_valid is True
+        assert len(errors) == 0
+
 
 class TestCareerMetadataIntegration:
     """Integration tests for career metadata."""
