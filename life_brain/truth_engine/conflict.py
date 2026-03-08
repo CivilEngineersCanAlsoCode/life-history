@@ -64,12 +64,79 @@ def calculate_contradiction_magnitude(
     Returns:
         Normalized contradiction score (0-1)
     """
-    # TODO: Implement
-    # METRIC: |new - old| / max(new, old)
-    # FACT: LLM binary check → 0.0 or 1.0
-    # DATE: date_diff_days / 365
-    # STORY: LLM semantic divergence (0-1)
-    pass
+    if atom_type == "metric":
+        return _contradiction_metric(new_value, existing_value)
+    elif atom_type == "fact":
+        return _contradiction_fact(new_value, existing_value)
+    elif atom_type == "date":
+        return _contradiction_date(new_value, existing_value)
+    elif atom_type == "story":
+        return _contradiction_story(new_value, existing_value)
+    else:
+        return 0.0  # Unknown type → safe
+
+
+def _contradiction_metric(new_value: Any, existing_value: Any) -> float:
+    """
+    METRIC contradiction: |new - old| / max(new, old)
+
+    Examples:
+      - marks 100 vs 30: |100-30|/100 = 0.70
+      - salary 50L vs 75L: |50-75|/75 ≈ 0.33
+      - time 48h vs 15m: |2880-15|/2880 ≈ 0.99
+    """
+    try:
+        new_num = float(new_value)
+        old_num = float(existing_value)
+        if max(abs(new_num), abs(old_num)) == 0:
+            return 0.0
+        return abs(new_num - old_num) / max(abs(new_num), abs(old_num))
+    except (ValueError, TypeError):
+        return 0.0  # Can't parse as numbers → no contradiction
+
+
+def _contradiction_fact(new_value: Any, existing_value: Any) -> float:
+    """
+    FACT contradiction: LLM binary check → 0.0 or 1.0
+
+    Examples:
+      - "I led project" vs "I supported project" → 1.0 (contradiction)
+      - "I was PM" vs "I was Product Manager" → 0.0 (same thing)
+    """
+    # TODO: Call Claude API to check if same fact or contradictory
+    # For now, simple string comparison
+    new_str = str(new_value).lower().strip()
+    old_str = str(existing_value).lower().strip()
+    if new_str == old_str:
+        return 0.0
+    else:
+        return 1.0  # Different facts = full contradiction (will refine with LLM)
+
+
+def _contradiction_date(new_value: Any, existing_value: Any) -> float:
+    """
+    DATE contradiction: date_diff_days / 365
+
+    Examples:
+      - 2024-01 vs 2024-02: 30 days / 365 ≈ 0.08 (minor diff)
+      - 2023 vs 2024: 365 days / 365 = 1.0 (full year diff)
+    """
+    # TODO: Parse dates and calculate difference
+    # For now, return 0.0 (needs date parsing)
+    return 0.0
+
+
+def _contradiction_story(new_value: Any, existing_value: Any) -> float:
+    """
+    STORY contradiction: LLM semantic divergence (0-1)
+
+    Examples:
+      - "I led technical redesign" vs "I redesigned the API" → 0.2 (related)
+      - "Project failed" vs "Project succeeded" → 0.9 (opposite)
+    """
+    # TODO: Call Claude API with semantic divergence check
+    # For now, return 0.0 (placeholder)
+    return 0.0
 
 
 def entity_scope_check(new_pair: Dict, existing_pair: Dict) -> bool:

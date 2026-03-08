@@ -35,11 +35,11 @@ class IntentDetector:
         Returns:
             Mode.SMALL_TALK or Mode.GUIDED
         """
-        # TODO: Implement
-        # Check for domain keywords (career, relationships, health, finance, etc.)
-        # If strong match (confidence > 0.7) → return GUIDED (will auto-suggest)
-        # Else → return SMALL_TALK (show mode menu)
-        pass
+        domain, confidence = detect_keywords_simple(user_message)
+        if confidence > 0.7:
+            return Mode.GUIDED
+        else:
+            return Mode.SMALL_TALK
 
     def detect_intent(self, small_talk_message: str) -> Tuple[Optional[str], float]:
         """
@@ -98,7 +98,34 @@ def detect_keywords_simple(message: str) -> Tuple[str, float]:
     Returns:
         Tuple of (domain, confidence)
     """
-    # TODO: Implement
-    # Check for domain keywords
-    # Return top domain + confidence
-    pass
+    msg_lower = message.lower()
+
+    # Domain keywords (domain -> keywords list)
+    keywords_map = {
+        "career": ["interview", "job", "role", "position", "project", "promotion", "boss", "manager", "work", "salary", "offer", "raise", "skill"],
+        "relationships": ["friend", "boyfriend", "girlfriend", "wife", "husband", "partner", "conflict", "breakup", "family", "relationship"],
+        "health": ["health", "fitness", "sleep", "diet", "anxiety", "stress", "energy", "mental", "exercise", "wellness"],
+        "finance": ["money", "investment", "budget", "loan", "spend", "save", "financial", "expense", "income"],
+        "goals": ["goal", "dream", "plan", "achieve", "ambition", "target"],
+        "personal_growth": ["learn", "grow", "improve", "change", "habit", "skill", "strength", "weakness"],
+    }
+
+    # Score each domain
+    scores = {}
+    for domain, keywords in keywords_map.items():
+        matches = sum(1 for kw in keywords if kw in msg_lower)
+        scores[domain] = matches
+
+    # Get top domain
+    if sum(scores.values()) == 0:
+        return ("none", 0.0)  # No keywords found
+
+    top_domain = max(scores, key=scores.get)
+    max_matches = scores[top_domain]
+    total_keywords = sum(len(kws) for kws in keywords_map.values())
+
+    # Confidence: max_matches / total_keywords (or 0.7+ if strong match)
+    confidence = max_matches / 10.0  # Heuristic: 3+ matches → 0.3+, 7+ → 0.7+
+    confidence = min(confidence, 1.0)
+
+    return (top_domain, confidence)

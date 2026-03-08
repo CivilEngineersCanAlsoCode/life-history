@@ -28,11 +28,20 @@ class ChromaDBManager:
         Returns:
             Collection ready for add/query operations
         """
-        # TODO: Implement
-        # 1. Create PersistentClient(path=self.path)
-        # 2. Get or create collection with name=COLLECTION_NAME, metadata={hnsw:space: cosine}
-        # 3. Return collection
-        pass
+        try:
+            # Create persistent client
+            self.client = chromadb.PersistentClient(path=self.path)
+
+            # Get or create collection with cosine similarity (best for text embeddings)
+            self.collection = self.client.get_or_create_collection(
+                name=COLLECTION_NAME,
+                metadata={"hnsw:space": HNSW_SPACE}
+            )
+
+            return self.collection
+
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize ChromaDB collection: {e}")
 
     def validate_required_fields(self, metadata: Dict[str, Any]) -> bool:
         """
@@ -47,11 +56,35 @@ class ChromaDBManager:
         Raises:
             ValueError: If required field missing
         """
-        # TODO: Implement
-        # Check all fields in REQUIRED_METADATA_FIELDS are present
-        # Check enum values are valid (privacy, confidence, source, etc.)
-        # Return True or raise ValueError
-        pass
+        # Check all required fields present
+        missing_fields = []
+        for field in REQUIRED_METADATA_FIELDS:
+            if field not in metadata or metadata[field] is None:
+                missing_fields.append(field)
+
+        if missing_fields:
+            raise ValueError(f"Missing required metadata fields: {', '.join(missing_fields)}")
+
+        # Validate enum values
+        if metadata.get("privacy") not in [p.value for p in Privacy]:
+            raise ValueError(f"Invalid privacy value: {metadata.get('privacy')}")
+
+        if metadata.get("source") not in [s.value for s in Source]:
+            raise ValueError(f"Invalid source value: {metadata.get('source')}")
+
+        if metadata.get("confidence") and metadata.get("confidence") not in [c.value for c in Confidence]:
+            raise ValueError(f"Invalid confidence value: {metadata.get('confidence')}")
+
+        # Validate schema_version is integer
+        if not isinstance(metadata.get("schema_version"), int):
+            raise ValueError(f"schema_version must be integer, got {type(metadata.get('schema_version'))}")
+
+        # Validate importance is 1-5
+        importance = metadata.get("importance")
+        if not isinstance(importance, int) or importance < 1 or importance > 5:
+            raise ValueError(f"importance must be integer 1-5, got {importance}")
+
+        return True
 
     def validate_text_self_contained(self, text: str) -> bool:
         """
