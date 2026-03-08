@@ -1054,10 +1054,43 @@ results = query_life_brain(
 
 Yeh section defines karta hai ki information **kaise enter hoti hai** — interview-style conversations, expert personas, aur MECE extraction ke through.
 
+### Language Contract
+
+> **User speaks Hinglish. System stores and retrieves in English. Translation is invisible.**
+
+```
+User Layer (Hinglish):     "CGB mein 14 APIs integrate kiye, latency 48h se 15min ho gayi"
+         ↕  Silent translation (LLM)
+Storage Layer (English):   "Integrated 14 APIs in CGB, reducing data latency from 48h to 15min"
+         ↕  Silent translation (LLM)
+User Layer (Hinglish):     "CGB mein 14 APIs integrate kiye gaye the, latency 48h se 15min ho gayi"
+```
+
+**Why:** English-trained embedding models produce unreliable similarity scores for Hinglish text. All conflict detection thresholds (0.75, 0.85), groundedness thresholds (0.50, 0.85), and MECE checks depend on accurate cosine similarity — which only works reliably in English.
+
+**What stays Hinglish:**
+- User conversation (never changed)
+- Raw answer in session file (verbatim preservation)
+- System responses to user
+
+**What is always English:**
+- ChromaDB document text (translated before insert)
+- Q&A questions and answers
+- Nuggets during extraction
+- Query embeddings (translate query before retrieval)
+- Metadata string values
+
+**What is preserved as-is (never translated):**
+- Technical acronyms: CRR, AML, OKR, API, HNSW
+- Proper nouns: Sprinklr, AmEx, CGB
+- Numbers and metrics: exact values, units
+
+---
+
 ### System Architecture Overview
 
 ```
-User Message
+User Message (Hinglish)
     ↓
 [Intent Detector] ─── even in small talk → suggest expert
     ↓
@@ -1073,7 +1106,13 @@ User Message
                     ↓
               [One-by-One Focused Q&A + Depth Probing]
                     ↓
-              [MECE Extraction Pipeline]
+              ┌──────────────────────────────────────┐
+              │  TRANSLATION LAYER                   │
+              │  Hinglish answer → English           │
+              │  (technical terms + nouns preserved) │
+              └──────────────────────────────────────┘
+                    ↓
+              [MECE Extraction Pipeline (English)]
                     ↓
               ┌────────────────────────────┐
               │  TRUTH ENGINE              │
@@ -1083,7 +1122,9 @@ User Message
                     ↓ (only if clean)
               [Groundedness Check]
                     ↓
-              [ChromaDB Commit]
+              [ChromaDB Commit (English)]
+                    ↓
+              [Response to User (Hinglish)]
 ```
 
 ---
@@ -1568,15 +1609,18 @@ company: Sprinklr | project: CGB | role: Senior SWE
 date_range: 2022-04 to 2024-07 | expert: Richard (Feynman)
 ---
 
-## Raw Answer (VERBATIM — Do Not Edit)
-[user ka exact answer]
+## Raw Answer (VERBATIM Hinglish — Do Not Edit)
+[user ka exact answer — Hinglish mein, exactly as spoken]
 
-## Extracted Q&A Pairs
+## English Translation (for extraction)
+[LLM-translated English version — used for nugget extraction only]
+
+## Extracted Q&A Pairs (English)
 
 ### [cgb-data-001] Data Silo Problem (FACT)
-**Q:** CGB mein data integration ka main challenge kya tha?
-**A:** Alag departments ka siloed data, no standard API format.
-**Metadata:** type=fact | category=problem_definition | importance=4 | tags=[data-silo, api]
+**Q:** What was the main data integration challenge in the CGB project?
+**A:** Government department data was siloed — each department had its own API with no standard format, making unified data access impossible.
+**Metadata:** type=fact | category=problem_definition | importance=4 | tags=[data-silo, api, integration-challenge]
 
 ### [cgb-data-003] Latency Metric (METRIC)
 **Q:** CGB ke baad data freshness kitni improve hui?
