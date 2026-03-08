@@ -181,6 +181,8 @@ class IntentDetector:
         """
         Find use cases matching given keywords.
 
+        Handles exact, partial, and prefix matching (e.g., "stressed" matches "stress").
+
         Args:
             keywords: List of keywords to match
 
@@ -194,7 +196,16 @@ class IntentDetector:
 
             # Exact and partial matches in keyword map
             for kw, uc_ids in self.keyword_map.items():
-                if keyword_lower == kw.lower() or keyword_lower in kw.lower():
+                kw_lower = kw.lower()
+
+                # Exact match
+                if keyword_lower == kw_lower:
+                    matching_uc_ids.update(uc_ids)
+                # Partial match (keyword contains kw or vice versa)
+                elif keyword_lower in kw_lower or kw_lower in keyword_lower:
+                    matching_uc_ids.update(uc_ids)
+                # Prefix match (e.g., "stressed" matches "stress")
+                elif keyword_lower.startswith(kw_lower) or kw_lower.startswith(keyword_lower):
                     matching_uc_ids.update(uc_ids)
 
         return sorted(list(matching_uc_ids))
