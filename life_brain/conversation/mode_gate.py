@@ -255,9 +255,23 @@ def conversation_entry(
 
     if mode == Mode.GUIDED:
         # Step 2a: User is ready for structured conversation
-        logger.debug("Guided mode: showing use cases")
-        result["next_action"] = "show_top_use_cases"
-        result["system_message"] = "Samjha! Tujhe structured guidance chahiye. Neeche dekh — kya relevant lag raha hai?"
+        # Use semantic matching to show top use cases
+        from life_brain.conversation.semantic_matcher import SemanticMatcher
+
+        matcher = SemanticMatcher()
+        matches = matcher.get_top_matches(user_message, top_n=10, min_score=0.0)
+
+        if matches:
+            use_case_display = matcher.format_top_10_display(matches)
+            result["next_action"] = "show_top_use_cases"
+            result["system_message"] = f"Samjha! Tujhe structured guidance chahiye. Neeche dekh — kya relevant lag raha hai?\n\n{use_case_display}"
+            result["top_matches"] = [(uid, uc) for uid, uc, score in matches]
+        else:
+            full_catalog = matcher.format_full_catalog()
+            result["next_action"] = "show_full_catalog"
+            result["system_message"] = f"Samjha! Kaunsa topic choose karna chahoge?\n\n{full_catalog}"
+
+        logger.debug(f"Guided mode: showing {len(matches) if matches else 'full'} use cases")
         return result
 
     # Step 2b: Small talk mode - detect intent
