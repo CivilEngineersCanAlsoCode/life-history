@@ -25,9 +25,16 @@ class PanelResponse:
     response_text: str
     role: Optional[str] = None  # e.g. "Lead", "Contrarian"
 
+    def __post_init__(self):
+        """Ensure no null values crash downstream formatting."""
+        if not self.expert_name:
+            self.expert_name = "Expert"
+        if self.response_text is None:
+            self.response_text = ""
+
     def label(self) -> str:
         """Generate the expert label."""
-        first_name = self.expert_name.split()[0]
+        first_name = self.expert_name.split()[0] if self.expert_name.split() else "Expert"
         if self.role:
             return f"{first_name} ({self.role})"
         return first_name
@@ -154,8 +161,8 @@ class PanelFormatter:
         """
         lines = []
         for r in responses:
-            name = r.get("expert", "Expert")
-            text = r.get("response", "")
+            name = r.get("expert") or "Expert"
+            text = r.get("response") or ""
             role = r.get("role")
             resp = PanelResponse(expert_name=name, response_text=text, role=role)
             label = resp.label()

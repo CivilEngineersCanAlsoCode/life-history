@@ -195,6 +195,27 @@ class UserPreferenceManager:
         """Reset to defaults."""
         self._preferences = UserPreferences()
 
+    def load_from_disk(self) -> bool:
+        """Load preferences from disk, falling back to defaults on any error.
+
+        Returns:
+            True if loaded successfully, False if fell back to defaults.
+        """
+        if not self._storage_path:
+            return True
+        try:
+            with open(self._storage_path, "r") as f:
+                data = json.load(f)
+            self.update_from_dict(data)
+            return True
+        except FileNotFoundError:
+            logger.debug("Preferences file not found — using defaults")
+            return False
+        except (IOError, OSError, json.JSONDecodeError, ValueError) as e:
+            logger.error(f"Preferences load failed, using defaults: {e}")
+            self._preferences = UserPreferences()
+            return False
+
     def save_to_disk(self) -> bool:
         """Persist preferences to disk if storage_path is set.
 

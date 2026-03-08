@@ -299,3 +299,67 @@ class TestSaveToDisk:
         mgr.save_to_disk()
 
         assert mgr._last_save_error is None
+
+
+class TestLoadFromDisk:
+    """Regression tests for issues-ly2.14.10: preferences loading fails silently.
+
+    Bug: No load_from_disk() method — preferences couldn't be restored from disk.
+    Fix: load_from_disk() reads JSON, calls update_from_dict(), falls back to defaults
+    on IOError/JSONDecodeError/FileNotFoundError without raising.
+    """
+
+    def test_load_from_disk_reads_saved_prefs(self, tmp_path):
+        """load_from_disk() should restore previously saved preferences."""
+        import json
+        path = str(tmp_path / "prefs.json")
+        data = {"language": "hindi", "conversation_style": "concise"}
+        with open(path, "w") as f:
+            json.dump(data, f)
+
+        mgr = UserPreferenceManager(storage_path=path)
+        ok = mgr.load_from_disk()
+
+        assert ok is True
+        assert mgr.preferences.language == "hindi"
+        assert mgr.preferences.conversation_style == "concise"
+
+    def test_load_from_disk_file_not_found_returns_false(self, tmp_path):
+        """load_from_disk() with missing file should return False, not raise."""
+        mgr = UserPreferenceManager(storage_path=str(tmp_path / "nope.json"))
+        ok = mgr.load_from_disk()
+        assert ok is False
+
+    def test_load_from_disk_corrupt_json_falls_back_to_defaults(self, tmp_path):
+        """load_from_disk() with corrupt JSON should fall back to defaults without raising."""
+        path = str(tmp_path / "bad.json")
+        with open(path, "w") as f:
+            f.write("{ not valid json }")
+
+        mgr = UserPreferenceManager(storage_path=path)
+        ok = mgr.load_from_disk()
+
+        assert ok is False
+        # Defaults restored
+        assert mgr.preferences.language == "hinglish"
+
+    def test_load_from_disk_no_storage_path_returns_true(self):
+        """load_from_disk() with no path configured is a no-op returning True."""
+        mgr = UserPreferenceManager()
+        ok = mgr.load_from_disk()
+        assert ok is True
+
+    def test_load_preserves_invalid_keys_gracefully(self, tmp_path):
+        """load_from_disk() with invalid preference values should not raise."""
+        import json
+        path = str(tmp_path / "prefs.json")
+        data = {"language": "klingon"}  # Invalid value
+        with open(path, "w") as f:
+            json.dump(data, f)
+
+        mgr = UserPreferenceManager(storage_path=path)
+        ok = mgr.load_from_disk()
+
+        # Returns True (file read OK), but invalid value silently skipped
+        assert ok is True
+        assert mgr.preferences.language == "hinglish"  # Default preserved

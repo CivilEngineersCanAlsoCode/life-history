@@ -129,6 +129,9 @@ class MetadataInheritanceManager:
         Returns:
             DocumentMetadata object
         """
+        if not doc_id:
+            raise ValueError("doc_id cannot be null or empty")
+
         metadata = DocumentMetadata(
             doc_id=doc_id,
             title=title,
@@ -166,6 +169,9 @@ class MetadataInheritanceManager:
         Returns:
             (ChunkMetadata, error if any)
         """
+        if not parent_doc_id:
+            return None, "parent_doc_id cannot be null or empty"
+
         parent = self.parent_documents.get(parent_doc_id)
         if not parent:
             return None, f"Parent document {parent_doc_id} not found"

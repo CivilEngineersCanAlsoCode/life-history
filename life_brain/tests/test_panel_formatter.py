@@ -195,3 +195,50 @@ class TestFormatResponsesList:
         ]
         out = formatter.format_responses_list(responses)
         assert "\n\n" in out
+
+
+class TestNullExpertResponseBug:
+    """Regression tests for issues-ly2.20.4: null expert response crashes formatter.
+
+    Bug: PanelFormatter crashes when expert_name is None or response_text is None.
+    Fix: __post_init__ defaults, label() guard, format_responses_list() uses `or`.
+    """
+
+    def test_null_response_text_does_not_crash(self):
+        """PanelResponse with None response_text should default to empty string."""
+        resp = PanelResponse(expert_name="Elon Musk", response_text=None)
+        assert resp.response_text == ""
+
+    def test_null_expert_name_defaults_to_expert(self):
+        """PanelResponse with None expert_name should default to 'Expert'."""
+        resp = PanelResponse(expert_name=None, response_text="hello")
+        assert resp.expert_name == "Expert"
+
+    def test_empty_expert_name_defaults(self):
+        """PanelResponse with empty string expert_name should default."""
+        resp = PanelResponse(expert_name="", response_text="hi")
+        assert resp.expert_name == "Expert"
+
+    def test_format_with_null_response_text(self):
+        """Formatter should not crash when response_text is None."""
+        formatter = PanelFormatter()
+        panel = PanelOutput(
+            question="Q?",
+            responses=[PanelResponse(expert_name="Alice", response_text=None)],
+        )
+        out = formatter.format(panel)
+        assert "[Alice]:" in out  # Should render without crash
+
+    def test_format_responses_list_null_response(self):
+        """format_responses_list should handle null 'response' value."""
+        formatter = PanelFormatter()
+        responses = [{"expert": "Bob", "response": None}]
+        out = formatter.format_responses_list(responses)
+        assert "[Bob]:" in out  # No crash
+
+    def test_format_responses_list_null_expert(self):
+        """format_responses_list should handle null 'expert' value."""
+        formatter = PanelFormatter()
+        responses = [{"expert": None, "response": "Some response"}]
+        out = formatter.format_responses_list(responses)
+        assert "[Expert]:" in out

@@ -413,3 +413,52 @@ class TestMetadataInheritanceManager:
         # Export data
         mapping = manager.get_inheritance_map()
         assert len(mapping) == 2
+
+
+class TestNullParentDocIdBug:
+    """Regression tests for issues-beu: metadata inheritance fails when parent doc_id is null.
+
+    Bug: create_chunk() with None parent_doc_id silently passed to dict.get(None)
+    and produced confusing error. register_document() with None doc_id stored bad state.
+    Fix: explicit null checks with clear error messages before processing.
+    """
+
+    def test_create_chunk_null_parent_doc_id_returns_error(self):
+        """create_chunk() with None parent_doc_id should return error, not crash."""
+        manager = MetadataInheritanceManager()
+        chunk, error = manager.create_chunk(
+            parent_doc_id=None, chunk_content="some text", sequence=0
+        )
+        assert chunk is None
+        assert error is not None
+        assert "null" in error.lower() or "empty" in error.lower()
+
+    def test_create_chunk_empty_parent_doc_id_returns_error(self):
+        """create_chunk() with empty string parent_doc_id should return error."""
+        manager = MetadataInheritanceManager()
+        chunk, error = manager.create_chunk(
+            parent_doc_id="", chunk_content="some text", sequence=0
+        )
+        assert chunk is None
+        assert error is not None
+
+    def test_register_document_null_doc_id_raises(self):
+        """register_document() with None doc_id should raise ValueError."""
+        manager = MetadataInheritanceManager()
+        with pytest.raises(ValueError):
+            manager.register_document(doc_id=None, title="Test Doc")
+
+    def test_register_document_empty_doc_id_raises(self):
+        """register_document() with empty string doc_id should raise ValueError."""
+        manager = MetadataInheritanceManager()
+        with pytest.raises(ValueError):
+            manager.register_document(doc_id="", title="Test Doc")
+
+    def test_valid_doc_id_still_works(self):
+        """Normal (non-null) doc_id must still work after guard added."""
+        manager = MetadataInheritanceManager()
+        manager.register_document("doc1", "My Doc", company="Acme")
+        chunk, error = manager.create_chunk("doc1", "chunk content", sequence=0)
+        assert error is None
+        assert chunk is not None
+        assert chunk.company == "Acme"

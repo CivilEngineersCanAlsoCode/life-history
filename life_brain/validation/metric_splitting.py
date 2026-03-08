@@ -72,7 +72,7 @@ class MetricSplitter:
         "ratio": r"(\w+)[\s:]*(\d+)\s*:\s*(\d+)",
         "percentage": r"(\w+)[\s:]*(\d+(?:\.\d+)?)\s*%",
         "marks": r"(marks|points|score|rating)[\s:]*(\d+(?:\.\d+)?)",
-        "count": r"(count|total|number|amount)[\s:]*(\d+)(?!\s*[:/])",
+        "count": r"(count|total|number|amount)[\s:]*(\d+(?:\.\d+)?)(?!\s*[:/])",
         "score": r"(\w+)[\s:]*(\d+(?:\.\d+)?)\s*/\s*(\d+)",
     }
 
@@ -122,8 +122,12 @@ class MetricSplitter:
         return metrics, None
 
     def _split_sentences(self, text: str) -> List[str]:
-        """Split text into sentences."""
-        sentences = re.split(r"[.!?]+", text)
+        """Split text into sentences.
+
+        Uses negative lookbehind/lookahead to avoid splitting on decimal points
+        like '3.5' — only splits on '.' not surrounded by digits.
+        """
+        sentences = re.split(r"(?<!\d)\.(?!\d)|[!?]+", text)
         return [s.strip() for s in sentences if s.strip()]
 
     def _extract_metrics_from_sentence(self, sentence: str) -> List[MetricValue]:
@@ -214,7 +218,7 @@ class MetricSplitter:
 
             elif pattern_type == "count":
                 name = match.group(1)
-                value = int(match.group(2))
+                value = float(match.group(2))
                 return MetricValue(
                     metric_name=name,
                     raw_value=match.group(0),

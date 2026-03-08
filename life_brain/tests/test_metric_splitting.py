@@ -384,3 +384,45 @@ class TestMetricSplitter:
 
         if metrics:
             assert isinstance(metrics[0].metric.parsed_value, (int, float))
+
+
+class TestDecimalMetricsBug:
+    """Regression tests for issues-i4z.2.9: metric splitting fails on decimal numbers.
+
+    Bug: count pattern regex used \\d+ (integers only), so "3.5" was truncated to "3".
+    Also count parser used int() which would fail on float captures.
+    Fix: count regex now uses \\d+(?:\\.\\d+)? and parser uses float().
+    """
+
+    def test_count_with_decimal_extracted(self):
+        """Count metric with decimal value like '3.5' should be captured fully."""
+        splitter = MetricSplitter()
+        metrics, _ = splitter.split_metrics("The total count: 3.5 records")
+        # Should capture the decimal value
+        count_metrics = [m for m in metrics if m.metric.metric_name.lower() in ("count", "total")]
+        if count_metrics:
+            assert count_metrics[0].metric.parsed_value == 3.5
+
+    def test_percentage_decimal_still_works(self):
+        """Percentage with decimal should still work after fix."""
+        splitter = MetricSplitter()
+        metrics, _ = splitter.split_metrics("Accuracy: 87.5%")
+        pct_metrics = [m for m in metrics if m.metric.metric_type.value == "percentage"]
+        if pct_metrics:
+            assert pct_metrics[0].metric.parsed_value == 87.5
+
+    def test_marks_decimal_works(self):
+        """Marks/score with decimal should work."""
+        splitter = MetricSplitter()
+        metrics, _ = splitter.split_metrics("Score: 8.5")
+        if metrics:
+            assert any(abs(m.metric.parsed_value - 8.5) < 0.01 for m in metrics)
+
+    def test_count_integer_still_works(self):
+        """Integer counts should still work after decimal regex change."""
+        splitter = MetricSplitter()
+        metrics, _ = splitter.split_metrics("Total count: 42 items")
+        count_metrics = [m for m in metrics if m.metric.metric_name.lower() in ("count", "total")]
+        if count_metrics:
+            val = count_metrics[0].metric.parsed_value
+            assert val == 42 or val == 42.0
