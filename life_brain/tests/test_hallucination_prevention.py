@@ -38,7 +38,7 @@ def validator():
 @pytest.fixture
 def test_data():
     """Load test data from hallucination_test_data.json."""
-    with open("tests/fixtures/hallucination_test_data.json", "r") as f:
+    with open("life_brain/tests/fixtures/hallucination_test_data.json", "r") as f:
         return json.load(f)
 
 
