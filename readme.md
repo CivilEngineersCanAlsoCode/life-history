@@ -1047,3 +1047,556 @@ results = query_life_brain(
 | Use cases covered | 260 across 20 life domains |
 | Chunking | One fact/story/Q&A per doc. Linked via related_id and pattern_id |
 | ID format | `{domain}_{subdomain}_{date}_{slug}_{hash}` |
+
+---
+
+## Life Brain Conversational OS — Complete Architecture
+
+Yeh section defines karta hai ki information **kaise enter hoti hai** — interview-style conversations, expert personas, aur MECE extraction ke through.
+
+### System Architecture Overview
+
+```
+User Message
+    ↓
+[Intent Detector] ─── even in small talk → suggest expert
+    ↓
+[Mode Gate] → Small Talk / Guided
+    │
+    ├─ Small Talk → [Passive Capture] → confidence: 0.6 → Review Queue
+    │
+    └─ Guided → [Use Case Selector (Top 10 + Full List)]
+                    ↓
+              [Expert Roster] → user confirms introduction
+                    ↓
+              [Single Expert OR Multi-Expert Panel]
+                    ↓
+              [One-by-One Focused Q&A + Depth Probing]
+                    ↓
+              [MECE Extraction Pipeline]
+                    ↓
+              ┌────────────────────────────┐
+              │  TRUTH ENGINE              │
+              │  Conflict Detection →      │
+              │  Block / Clarify / Update  │
+              └────────────────────────────┘
+                    ↓ (only if clean)
+              [Groundedness Check]
+                    ↓
+              [ChromaDB Commit]
+```
+
+---
+
+## Truth Engine — Conflict Detection & Anti-Hallucination
+
+**Core Philosophy:** "Ek bhi galat memory poori retrieval ko poison kar sakti hai."
+
+### Pre-Insert Conflict Check
+
+Har naye Q&A pair ko insert karne se pehle existing DB check karo:
+
+```python
+def conflict_check(new_pair: QAPair, collection: ChromaDB) -> ConflictResult:
+    candidates = collection.query(
+        query_texts=[new_pair.question + " " + new_pair.answer],
+        n_results=5,
+        where={"domain": new_pair.metadata.domain}
+    )
+    for candidate in candidates:
+        sem_sim = candidate.cosine_similarity
+        contradiction = measure_contradiction(new_pair, candidate)
+        conflict_score = sem_sim * contradiction.magnitude
+        if conflict_score > CONFLICT_THRESHOLD:
+            return ConflictResult(status="CONFLICT", existing=candidate, score=conflict_score)
+    return ConflictResult(status="SAFE")
+```
+
+### Quantitative Conflict Formula
+
+```
+Conflict Score = Semantic_Similarity × Contradiction_Magnitude
+
+Semantic_Similarity = cosine_sim(embed(new_pair), embed(existing_pair))
+  # > 0.75 = "about the same thing"
+
+Contradiction_Magnitude (by atom type):
+  ├─ METRIC:  |new_val - old_val| / max(new_val, old_val)
+  │            e.g., marks 100 vs 30 → |100-30|/100 = 0.70
+  ├─ FACT:    LLM binary check → 0.0 or 1.0
+  ├─ DATE:    date_diff_days / 365
+  └─ STORY:   semantic_divergence from LLM (0-1)
+
+Decision Matrix:
+  conflict_score > 0.6   → HARD CONFLICT → block, ask user
+  0.3 < score ≤ 0.6      → SOFT CONFLICT → warn, ask user
+  0.1 < score ≤ 0.3      → ENRICHMENT   → auto-update existing entry
+  score ≤ 0.1            → SAFE          → insert freely
+```
+
+### Conflict Resolution Protocol
+
+```
+System: "Ruko ek second —
+
+Tumne pehle kaha tha:
+  📌 [existing_pair.answer] (stored on [date])
+
+Abhi tum bol rahe ho:
+  📝 [new_pair.answer]
+
+Options:
+  A) Purani baat sahi hai → discard new
+  B) Nayi baat sahi hai → update purani + create change_log
+  C) Dono alag contexts mein sahi hain → add context_qualifier to both
+  D) Verify karna hai → flag both unverified, add to review queue"
+```
+
+**Change Log Entry** (every correction creates a `document_record`):
+```python
+{
+    "type": "document_record",
+    "category": "correction",
+    "old_doc_id": "career_edu_2020_marks_a3f2",
+    "old_value": "marks: 100",
+    "new_value": "marks: 30",
+    "resolution": "user_confirmed_new",
+    "context": "semester 2 result"
+}
+```
+
+---
+
+### Anti-Hallucination Protocol
+
+**Core Rule:** "Jo DB mein nahi hai, wo bolenge nahi."
+
+```
+Groundedness = max(cosine_sim(query_embed, doc_embed_i)) over retrieved docs
+
+  G > 0.85   → HIGH confidence → Output with source citation
+  0.70-0.85  → MEDIUM         → Output with "confirm karo" caveat
+  0.50-0.70  → LOW            → Output with uncertainty flag
+  G ≤ 0.50   → NO MATCH       → "Mere paas is baare mein enough information nahi hai"
+```
+
+**Synthesis Limit:** Max 3 vectors per output. Each cited. More than 3 needed → ask narrower question.
+
+**Attribution Format:**
+```
+"Tumhara Sprinklr salary approximately ₹X tha.
+(Source: career_compensation_2022_sprinklr_b4c1, confidence: 0.92)"
+```
+
+---
+
+## Conversational Layer — Mode Gate & Use Case Selection
+
+### Mode Gate Entry
+
+```
+System: "Kya chal raha hai?"
+
+[A] Bas baatein (Small Talk — passive extraction, confidence: 0.6)
+[B] Kuch record karna hai (Guided — structured extraction)
+
+Auto-detect: if user message contains strong keywords → suggest top use case directly
+```
+
+### Small Talk Intent Detection
+
+Even in casual mode, continuously detect intent:
+- If confidence > 0.7 → suggest expert once (never repeat if ignored)
+- Small talk atoms get `confidence: 0.6`
+- Weekly review queue: "Yeh baatein tumne kahi thi — confirm karo?"
+
+### Use Case Selection
+
+```
+User ne context diya → Top 10 matching use cases (semantic similarity ranked)
+                       + [Show all] option
+User ne context nahi diya → Full categorized list
+```
+
+**Display Format:**
+```
+1. 🎯 [C1] Interview Prep - Behavioral  (Satya Nadella)   ▓▓▓▓▓▓▓▓░░ 92%
+2. 💼 [C11] Leadership Story Capture   (APJ Kalam)        ▓▓▓▓▓▓▓░░░ 87%
+3. 🧠 [C7] Career Planning & Pivots   (Naval Ravikant)    ▓▓▓▓▓▓░░░░ 81%
+[📋 Sabhi use cases dikhao]
+```
+
+---
+
+## Expert Roster — 16 Famous Personas
+
+### Expert Introduction Protocol (ALWAYS before loading persona)
+
+```
+System: "Main tumhe [Name] se milwana chahta hun.
+
+[Name] ek [domain] expert hain — [one-liner style].
+Real life mein: [brief why they're famous].
+
+Kya tum [Name] ke saath is topic pe baat karna chahoge?"
+
+[Haan] → Load persona
+[Koi aur chahiye] → Show domain alternatives
+[Khud karo] → Proceed without persona
+```
+
+### Full Expert List
+
+**🎯 CAREER**
+
+| ID | Use Case | Expert | Real Identity | Style |
+|----|----------|--------|---------------|-------|
+| C1 | Interview Prep - Behavioral | Satya | Satya Nadella | Empathetic, growth mindset |
+| C2 | Interview Prep - Technical | Richard | Richard Feynman | First-principles, simplify |
+| C3 | Interview Prep - System Design | Jeff | Jeff Bezos | Working backwards, scale |
+| C4 | Resume Crafting | Indra | Indra Nooyi | Strategic positioning |
+| C5 | Salary Negotiation | Chris | Chris Voss (FBI negotiator) | Tactical empathy |
+| C6 | Performance Review Prep | Andy | Andy Grove | OKRs, direct feedback |
+| C7 | Career Planning & Pivots | Naval | Naval Ravikant | Optionality, leverage |
+| C8 | Job Search Strategy | Reid | Reid Hoffman | Network leverage |
+| C9 | Project Documentation | Narayana | N.R. Narayana Murthy | Ethics + execution |
+| C10 | Learning & Skill Dev | Richard | Richard Feynman | Feynman technique |
+| C11 | Leadership Stories | APJ | A.P.J. Abdul Kalam | Values, inspiration |
+| C12 | Team/Manager Dynamics | Andy | Andy Grove | Management by OKR |
+
+**💛 RELATIONSHIPS**
+
+| ID | Use Case | Expert | Real Identity | Style |
+|----|----------|--------|---------------|-------|
+| R1 | Conflict Resolution | Esther | Esther Perel | Psychoanalytic, frank |
+| R2 | Difficult Conversations | Chris | Chris Voss | Tactical empathy |
+| R3 | Romantic Relationship | Devdutt | Devdutt Pattanaik | Indian mythology lens |
+| R4 | Family Issues | Ratan | Ratan Tata | Humble, family values |
+| R5 | Friendship Dynamics | Brené | Brené Brown | Vulnerability + courage |
+| R6 | Professional Networking | Reid | Reid Hoffman | Strategic connections |
+| R7 | Boundaries & Saying No | Brené | Brené Brown | Assertiveness + warmth |
+
+**💪 HEALTH**
+
+| ID | Use Case | Expert | Real Identity | Style |
+|----|----------|--------|---------------|-------|
+| H1 | Fitness Planning | Andrew | Andrew Huberman | Neuroscience + protocols |
+| H2 | Mental Wellness | Brené | Brené Brown | Research-backed empathy |
+| H3 | Sleep Optimization | Andrew | Andrew Huberman | Circadian science |
+| H4 | Nutrition | Andrew | Andrew Huberman | Evidence-based |
+| H5 | Energy Management | Sadhguru | Sadhguru Vasudev | Inner engineering |
+| H6 | Medical Tracking | Andrew | Andrew Huberman | Systematic protocols |
+
+**💰 FINANCE**
+
+| ID | Use Case | Expert | Real Identity | Style |
+|----|----------|--------|---------------|-------|
+| F1 | Budgeting | Warren | Warren Buffett | Live below means, frugal |
+| F2 | Investment Strategy | Warren | Warren Buffett | Long-term, value investing |
+| F3 | Salary & Compensation | Charlie | Charlie Munger | Opportunity cost, inversion |
+| F4 | Big Purchase Decisions | Charlie | Charlie Munger | Second-order thinking |
+| F5 | Financial Goals | Rakesh | Rakesh Jhunjhunwala | Indian market wisdom |
+
+**🧠 PERSONAL GROWTH**
+
+| ID | Use Case | Expert | Real Identity | Style |
+|----|----------|--------|---------------|-------|
+| P1 | Habit Building | Andrew | Andrew Huberman | Dopamine + routine |
+| P2 | Goal Setting | Elon | Elon Musk | First principles, moonshots |
+| P3 | Journaling | Brené | Brené Brown | Reflection + growth |
+| P4 | Learning Plans | Richard | Richard Feynman | Simplify to mastery |
+| P5 | Identity & Values | Sadhguru | Sadhguru | Inner clarity |
+| P6 | Major Life Decisions | Charlie | Charlie Munger | Mental models |
+
+**🎨 CREATIVITY**
+
+| ID | Use Case | Expert | Real Identity | Style |
+|----|----------|--------|---------------|-------|
+| CR1 | Idea Generation | Steve | Steve Jobs | Arts + tech intersection |
+| CR2 | Writing | Naval | Naval Ravikant | Aphoristic, clear |
+| CR3 | Personal Project Planning | Jeff | Jeff Bezos | PR/FAQ + working backwards |
+
+**📚 MEMORIES**
+
+| ID | Use Case | Expert | Real Identity | Style |
+|----|----------|--------|---------------|-------|
+| M1 | Memory Capture | APJ | A.P.J. Abdul Kalam | Turning points, grace |
+| M2 | Life Review | Sadhguru | Sadhguru | Pattern recognition |
+| M3 | People Notes | Devdutt | Devdutt Pattanaik | Relationships as stories |
+
+### Expert Personas (Core Vocabulary + Tone)
+
+```python
+PERSONAS = {
+    "satya_nadella": {
+        "tone": "empathetic, growth-mindset, inclusive",
+        "opener": "Tell me about a moment when you had to learn something completely new.",
+        "depth_trigger": "What did that teach you about yourself?",
+        "vocabulary": ["growth", "empathy", "learn-it-all", "purpose", "impact"],
+    },
+    "warren_buffett": {
+        "tone": "patient, folksy, long-term, value-focused",
+        "opener": "Current financial picture kya hai? Walk me through it simply.",
+        "depth_trigger": "What would the newspaper test say about this decision?",
+        "vocabulary": ["moat", "compounding", "margin of safety", "circle of competence"],
+        "signature_stories": ["See's Candies pricing power", "Missing Amazon — Too Hard pile"]
+    },
+    "esther_perel": {
+        "tone": "psychoanalytic, frank, non-judgmental, European wit",
+        "opener": "Kya chal raha hai? Sab theek hai?",
+        "depth_trigger": "Yeh situation pehle bhi aayi hai? Kab?",
+        "vocabulary": ["desire", "erotic capital", "narrative", "freedom", "responsibility"],
+    },
+    "naval_ravikant": {
+        "tone": "aphoristic, first-principles, optionality-focused",
+        "opener": "Long-term mein kya build karna chahte ho?",
+        "depth_trigger": "Agar koi constraint nahi hoti, toh kya karte?",
+        "vocabulary": ["leverage", "specific knowledge", "accountability", "equity"],
+    },
+    "sadhguru": {
+        "tone": "mystical, provocative, Indian philosophy, consciousness",
+        "opener": "Abhi tum kaisa feel kar rahe ho — andar se?",
+        "depth_trigger": "Yeh resistance kahan se aa rahi hai?",
+        "vocabulary": ["consciousness", "inner engineering", "joyfulness", "life energy"],
+    },
+    "apj_kalam": {
+        "tone": "inspiring, values-driven, humble, India-specific",
+        "opener": "Tumhara dream kya hai? Ek sentence mein batao.",
+        "depth_trigger": "Yeh dream India ke liye kya kar sakta hai?",
+        "vocabulary": ["dream", "fire", "youth", "integrity", "mission"],
+    },
+}
+```
+
+### Privacy Firewall per Expert
+
+```python
+expert_data_access = {
+    "warren_buffett": ["finance", "career_compensation"],
+    "esther_perel":   ["relationships", "personal_growth"],
+    "apj_kalam":      ["career", "identity", "goals"],
+    "sadhguru":       ["health", "personal_growth", "beliefs"],
+    "satya_nadella":  ["career", "leadership", "learning"],
+}
+# Expert sirf apne domain ka data "dekh" sakta hai
+```
+
+---
+
+## Multi-Expert Panel
+
+### Panel Formation
+
+```
+System: "Yeh decision career aur relationships dono ko touch karta hai.
+         Main tumhe [Naval] (career) aur [Esther] (relationships) dono se
+         milwata hun — ek panel mein. Theek hai?"
+```
+
+**Sequential Format** (default):
+```
+User Q → Expert 1 responds (their domain angle)
+       → Expert 2 responds (their domain angle)
+```
+
+**Adversarial/Debate Format** (opt-in):
+```
+User: "Kya mujhe startup join karni chahiye?"
+[Elon]: "Regretting not taking the shot is worse than failing. Jump."
+[Warren]: "Never risk what you have and need for what you don't have."
+System: "Dono perspectives sun lo — ab tum decide karo."
+```
+
+**Panel Rules:**
+- Max 3 experts in one panel
+- Each expert sees only their domain data (privacy firewall)
+- Clear speaker labels: **[Warren]:** / **[Esther]:**
+- Each expert maintains consistent persona vocabulary throughout session
+
+---
+
+## MECE Extraction Pipeline
+
+**Core principle: Nuggets FIRST, Q&A SECOND.** Direct Q&A generation is not MECE.
+
+```
+Raw Answer
+    ↓
+A: Nugget Identification
+   Rule: one subject + one predicate = one nugget
+   Metrics ALWAYS separate nuggets
+    ↓
+B: ME Check — Mutual Exclusivity
+   cosine_sim(nugget_i, nugget_j) > 0.85 → merge into richer nugget
+   LLM semantic check: "Do these cover the same knowledge?"
+    ↓
+C: Q&A Generation (one pair per validated nugget)
+   Primary Q + 2-3 alt phrasings stored in tags (for recall breadth)
+    ↓
+D: CE Check — Collective Exhaustiveness
+   LLM: "Koi information from raw answer NOT in pairs?"
+   → Create new pairs for any gaps
+    ↓
+E: Metadata Assignment
+   Inherited: company, project, role, date_range, source, confidence
+   Per-pair: type, category, importance, tags, related_id, emotion
+    ↓
+F: Truth Engine (conflict check)
+    ↓
+G: ChromaDB Commit (if no conflict)
+```
+
+**5 Atom Types:**
+
+| Type | Trigger | ChromaDB `type` |
+|------|---------|----------------|
+| FACT | System description, how X works | `fact` |
+| STORY | Sequence of events with outcome | `star_story` |
+| METRIC | Numbers, %, timelines, growth | `metric` |
+| DECISION | "chose X over Y", tradeoffs | `decision` |
+| LESSON | "seekha", "galti", "would redo" | `lesson` |
+
+**Example Transformation:**
+
+Raw Answer (5 sentences):
+> "CGB mein challenge tha ki government data siloed tha. Har department ka apna API tha.
+> Maine unified ingestion layer banaya jisme 14 APIs integrate kiye.
+> Data freshness 48h se 15min ho gayi. 78% queries auto-resolve hone lage."
+
+→ 4 MECE Q&A pairs:
+
+| Atom | Type | Q | Answer |
+|------|------|---|--------|
+| Data silo problem | FACT | "CGB mein data integration challenge kya tha?" | "Alag departments ka siloed data, no standard API format" |
+| Ingestion architecture | FACT | "CGB ke ingestion layer ka architecture kya tha?" | "Unified layer jo 14 govt APIs integrate karta tha" |
+| Latency metric | METRIC | "CGB ke baad data freshness kitni improve hui?" | "48h → 15min (192x improvement)" |
+| Resolution rate | METRIC | "CGB ne query resolution rate pe kya impact diya?" | "78% queries automatically resolve hone lage" |
+
+---
+
+## Dynamic Metadata Extension
+
+**3-Tier Fallback (apply in sequence):**
+
+```
+Tier 1: Existing 47 fields → map karo (e.g., "CFO ne dekha" → people: ["CFO"])
+Tier 2: tags field → overflow for categorical/searchable info
+Tier 3: extra_metadata: {} → novel key:value pairs stored as JSON string
+```
+
+**Auto-Discovery Loop** (run every 50 new pairs):
+```python
+# Keys in extra_metadata appearing 20+ times → suggest schema promotion
+key_counts = Counter(key for pair in all_pairs for key in pair.extra_metadata.keys())
+for key, count in key_counts.items():
+    if count >= 20:
+        create_beads_issue(f"Schema evolution: promote '{key}' to proper field")
+```
+
+---
+
+## Advanced Features
+
+### 1. Accountability Partner Mode
+Expert tracks commitments from past sessions:
+```
+Warren: "Pichli session mein tumne kaha tha March tak emergency fund banayenge.
+         3 months ho gaye — kya hua?"
+```
+
+### 2. Sentiment Tracking Across Sessions
+```python
+trend = analyze_emotion_trend(last_10_sessions)
+if trend.dominant == "stressed" and trend.increasing:
+    suggest_use_case("H2: Mental Wellness", expert="Brené")
+```
+
+### 3. First-Person Biography Generator
+After sufficient sessions, auto-generate:
+- Career arc narrative
+- Top 5 STAR stories
+- Leadership philosophy (derived from decision atoms)
+- Life values (derived from reflection + goal atoms)
+
+### 4. Time Machine Mode
+```
+"Warren 1960 mein kya karte agar unke paas ₹10 lakh hote?"
+→ Historical context + modern application
+```
+
+### 5. Cross-Domain Pattern Insight
+```
+System: "Maine notice kiya — tumhare career mein control freakery aur
+         relationships mein micromanagement pattern common hai.
+         Explore karna chahoge?" → creates pattern_id linked qa_pair
+```
+
+### 6. Knowledge Completeness Dashboard
+```
+Interview Prep (C1):
+  Problem Definition  ████████░░ 80%
+  STAR Stories        ████░░░░░░ 40%
+  Metrics & Impact    ██████████ 100%
+  Failure Stories     ██░░░░░░░░ 20%
+"Failure Stories pe focus karo — interview mein zaroor poochhenge."
+```
+
+### 7. Expert Disagreement (Adversarial Mode)
+Two experts deliberately present opposing views → user gets robust perspective before deciding.
+
+### 8. Session Continuity
+```yaml
+# session_state per use case
+last_question: 3
+answered: [q1, q2, q3]
+pending: [q4, q5, q6]
+# "Pichli baar Q3 pe ruke the — wahan se continue karein?"
+```
+
+---
+
+## Source Document Format
+
+**Location:** `career history/[company]/[project]/Interview Sessions/`
+
+**File:** `session_YYYYMMDD_[topic].md`
+
+```markdown
+---
+session_id: cgb_data_architecture_20240308
+company: Sprinklr | project: CGB | role: Senior SWE
+date_range: 2022-04 to 2024-07 | expert: Richard (Feynman)
+---
+
+## Raw Answer (VERBATIM — Do Not Edit)
+[user ka exact answer]
+
+## Extracted Q&A Pairs
+
+### [cgb-data-001] Data Silo Problem (FACT)
+**Q:** CGB mein data integration ka main challenge kya tha?
+**A:** Alag departments ka siloed data, no standard API format.
+**Metadata:** type=fact | category=problem_definition | importance=4 | tags=[data-silo, api]
+
+### [cgb-data-003] Latency Metric (METRIC)
+**Q:** CGB ke baad data freshness kitni improve hui?
+**A:** 48h → 15min (192x improvement)
+**Metadata:** type=metric | category=performance | importance=5 | tags=[latency, 192x]
+```
+
+---
+
+## Implementation Order
+
+```
+E5: Truth Engine     ─┐
+E4: Conversational   ─┼─ parallel → defines data integrity + entry mechanism
+                       ↓
+E0: MECE Extraction  → how raw answers become Q&A atoms
+                       ↓
+E1: ChromaDB         → F1.1 schema → F1.2 ingestion pipeline
+                       ↓
+E2: Organize existing knowledge → retroactively apply pipeline
+                       ↓
+E3: Context directory → reference templates
+```
