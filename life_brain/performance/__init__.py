@@ -24,6 +24,12 @@ from life_brain.performance.latency_testing import (
     LatencyTestResult,
     SemanticSearchLatencyTest,
 )
+from life_brain.performance.concurrent_testing import (
+    MemorySnapshot,
+    MemoryMonitor,
+    ConcurrentIngestionTest,
+    ConcurrentTestResult,
+)
 
 __all__ = [
     # Load testing
@@ -40,4 +46,9 @@ __all__ = [
     "LatencyMeasurement",
     "LatencyTestResult",
     "SemanticSearchLatencyTest",
+    # Concurrent testing
+    "MemorySnapshot",
+    "MemoryMonitor",
+    "ConcurrentIngestionTest",
+    "ConcurrentTestResult",
 ]
