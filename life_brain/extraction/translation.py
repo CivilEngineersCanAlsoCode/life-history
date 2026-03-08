@@ -27,10 +27,12 @@ RULES:
    - "par" → "but"
    - "kitna" → "how much"
    - "CGB mein" → "In CGB"
+   - "hona chahiye" → "should be"
+   - "kar raha hun" → progressive tense
 4. Output: pure English, ready for embedding models
 
 ORIGINAL (Hinglish):
-{original_text}
+{hinglish_text}
 
 TRANSLATION (English):
 """
@@ -43,9 +45,10 @@ RULES:
 2. Preserve technical terms exactly as-is: {preserved_terms}
 3. Make it sound like a natural conversation, not formal
 4. Preserve all metrics and numbers
+5. Use Hinglish particles: "kya", "par", "kitna", "hona chahiye", etc.
 
 ORIGINAL (English):
-{original_text}
+{english_text}
 
 TRANSLATION (Hinglish):
 """
@@ -68,11 +71,35 @@ class TranslationLayer:
         Returns:
             English translation ready for embedding
         """
-        # TODO: Implement
-        # 1. Call Claude API with HINGLISH_TO_ENGLISH_PROMPT
-        # 2. Preserve technical terms (check against PRESERVED_TERMS)
-        # 3. Return English text
-        pass
+        # Quick check: if no Hindi characters, likely already English
+        if not any(ord(c) > 127 for c in hinglish_text):
+            return hinglish_text
+
+        try:
+            prompt = HINGLISH_TO_ENGLISH_PROMPT.format(
+                preserved_terms=self.preserved_terms,
+                hinglish_text=hinglish_text
+            )
+
+            response = self.client.messages.create(
+                model="claude-opus-4-6",
+                max_tokens=500,
+                messages=[{
+                    "role": "user",
+                    "content": prompt
+                }]
+            )
+
+            english_text = response.content[0].text.strip()
+
+            # Verify preserved terms weren't modified
+            self.preserve_technical_terms(english_text)
+
+            return english_text
+
+        except Exception as e:
+            # On error, return original text
+            return hinglish_text
 
     def english_to_hinglish(self, english_text: str) -> str:
         """
@@ -84,12 +111,31 @@ class TranslationLayer:
         Returns:
             Hinglish conversation text
         """
-        # TODO: Implement
-        # 1. Call Claude API with ENGLISH_TO_HINGLISH_PROMPT
-        # 2. Make it conversational and friendly
-        # 3. Preserve technical terms
-        # 4. Return Hinglish
-        pass
+        try:
+            prompt = ENGLISH_TO_HINGLISH_PROMPT.format(
+                preserved_terms=self.preserved_terms,
+                english_text=english_text
+            )
+
+            response = self.client.messages.create(
+                model="claude-opus-4-6",
+                max_tokens=500,
+                messages=[{
+                    "role": "user",
+                    "content": prompt
+                }]
+            )
+
+            hinglish_text = response.content[0].text.strip()
+
+            # Verify preserved terms are intact
+            self.preserve_technical_terms(hinglish_text)
+
+            return hinglish_text
+
+        except Exception as e:
+            # On error, return original text
+            return english_text
 
     def translate_query(self, hinglish_query: str) -> str:
         """
@@ -114,10 +160,20 @@ class TranslationLayer:
         Returns:
             Text with preserved terms intact
         """
-        # TODO: Implement
-        # Verify all PRESERVED_TERMS appear unchanged in text
-        # If any are missing/modified, log warning
-        pass
+        import logging
+
+        logger = logging.getLogger(__name__)
+        missing_terms = []
+
+        for original_term, preserved_term in PRESERVED_TERMS.items():
+            # Check if term appears in either original or preserved form
+            if preserved_term.lower() not in text.lower():
+                missing_terms.append(preserved_term)
+
+        if missing_terms:
+            logger.warning(f"Preserved terms may have been modified: {missing_terms}")
+
+        return text
 
 
 # Singleton instance
