@@ -1,15 +1,25 @@
-"""Session management module for Life Brain."""
+"""Session management module."""
 
 from life_brain.session.session_manager import (
-    Session,
     SessionManager,
-    SessionMessage,
-    SessionMetadata,
+    SessionContext,
+    SessionStatus,
+)
+from life_brain.session.preferences import (
+    PreferencesSystem,
+    UserPreferences,
+    Language,
+    CommunicationStyle,
+    ExpertDomain,
 )
 
 __all__ = [
-    "Session",
     "SessionManager",
-    "SessionMessage",
-    "SessionMetadata",
+    "SessionContext",
+    "SessionStatus",
+    "PreferencesSystem",
+    "UserPreferences",
+    "Language",
+    "CommunicationStyle",
+    "ExpertDomain",
 ]
