@@ -1,0 +1,51 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;\red22\green21\blue22;\red246\green246\blue246;}
+{\*\expandedcolortbl;;\cssrgb\c11373\c10980\c11373;\cssrgb\c97255\c97255\c97255;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\fs30 \cf2 \cb3 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 CREATE TABLE tcrrd00.user\
+(\
+\'a0\'a0\'a0\'a0emp_cntrct_no\'a0\'a0\'a0 varchar(11)\'a0\'a0\'a0\'a0 NOT NULL,\
+\'a0\'a0\'a0\'a0user_full_nm\'a0\'a0\'a0\'a0 varchar(180)\'a0\'a0\'a0 NOT NULL,\
+\'a0\'a0\'a0\'a0user_first_nm\'a0\'a0\'a0 varchar(60)\'a0\'a0\'a0\'a0 NOT NULL,\
+\'a0\'a0\'a0\'a0user_lst_nm\'a0\'a0\'a0\'a0\'a0 varchar(60)\'a0\'a0\'a0\'a0 NOT NULL,\
+\'a0\'a0\'a0\'a0ads_id\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 varchar(50)\'a0\'a0\'a0\'a0 NOT NULL,\
+\'a0\'a0\'a0\'a0email_ad_tx\'a0\'a0\'a0\'a0\'a0 varchar(255)\'a0\'a0\'a0 NOT NULL,\
+\'a0\'a0\'a0\'a0creat_ts\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 timestamp(6)\'a0\'a0\'a0 NOT NULL,\
+\'a0\'a0\'a0\'a0creat_user_id\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 varchar(34)\'a0\'a0\'a0\'a0 NOT NULL,\
+\'a0\'a0\'a0\'a0lst_updt_ts\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 timestamp(6),\
+\'a0\'a0\'a0\'a0lst_updt_user_id\'a0\'a0\'a0\'a0\'a0\'a0\'a0 varchar(34)\
+);\
+ALTER TABLE tcrrd00.user ADD\
+\'a0\'a0\'a0\'a0CONSTRAINT user_PK PRIMARY KEY (emp_cntrct_no);\
+\pard\pardeftab720\partightenfactor0
+\cf2 \
+\pard\pardeftab720\partightenfactor0
+\cf2 CREATE TABLE tcrrd00.risk_assess_config_event\
+(\
+\'a0\'a0\'a0\'a0risk_assess_config_event_id\'a0\'a0\'a0 uuid\'a0\'a0\'a0\'a0\'a0\'a0\'a0 NOT NULL,\
+\'a0\'a0\'a0\'a0event_nm\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 varchar(50)\'a0\'a0\'a0 NOT NULL,\
+\'a0\'a0\'a0\'a0risk_assess_id\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 integer\'a0\'a0\'a0\'a0\'a0\'a0\'a0 NOT NULL,\
+\'a0\'a0\'a0\'a0risk_assess_vsn_no\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 integer\'a0\'a0\'a0\'a0\'a0\'a0\'a0 NOT NULL,\
+\'a0\'a0\'a0\'a0risk_assess_sta_cd\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 smallint\'a0\'a0\'a0\'a0\'a0\'a0 NOT NULL,\
+\'a0\'a0\'a0\'a0event_sta_nm\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 varchar(15),\
+\'a0\'a0\'a0\'a0creat_ts\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 timestamp(6)\'a0\'a0\'a0 NOT NULL,\
+\'a0\'a0\'a0\'a0creat_user_id\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 varchar(34)\'a0\'a0\'a0\'a0 NOT NULL,\
+\'a0\'a0\'a0\'a0lst_updt_ts\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 timestamp(6),\
+\'a0\'a0\'a0\'a0lst_updt_user_id\'a0\'a0\'a0\'a0\'a0\'a0\'a0 varchar(34)\
+);\
+\pard\pardeftab720\partightenfactor0
+\cf2 \
+\pard\pardeftab720\partightenfactor0
+\cf2 ALTER TABLE tcrrd00.risk_assess_config_event ADD\
+\'a0\'a0\'a0\'a0CONSTRAINT risk_assess_config_event_PK\'a0 PRIMARY KEY (risk_assess_config_event_id);\
+\pard\pardeftab720\partightenfactor0
+\cf2 \
+\pard\pardeftab720\partightenfactor0
+\cf2 ALTER TABLE tcrrd00.risk_assess_config_event ADD CONSTRAINT riskassessconfigevent_riskassessstatrk_fk\
+\'a0\'a0\'a0\'a0FOREIGN KEY (risk_assess_id, risk_assess_vsn_no, risk_assess_sta_cd)\
+\'a0\'a0\'a0\'a0REFERENCES tcrrd00.risk_assess_sta_trk(risk_assess_id, risk_assess_vsn_no, risk_assess_sta_cd);}

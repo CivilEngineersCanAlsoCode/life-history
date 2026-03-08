@@ -1,0 +1,251 @@
+CREATE TABLE ctry
+(
+    iso_alpha2_ctry_cd    character(2)    NOT NULL,
+    iso_alpha2_ctry_nm    varchar(100)    NOT NULL
+);
+
+ALTER TABLE ctry ADD 
+    CONSTRAINT ctry_PK PRIMARY KEY (iso_alpha2_ctry_cd);
+-----------------------------------------------------------------------------
+CREATE TABLE risk_assess
+(
+    risk_assess_id                   integer         NOT NULL,
+    risk_assess_vsn_no               integer         NOT NULL,
+    iso_alpha2_ctry_cd               character(2)    DEFAULT XX NOT NULL,
+    risk_assess_nm                   varchar(75)     NOT NULL,
+    risk_assess_ds                   varchar(500)    NOT NULL,
+    act_in                           boolean         NOT NULL,
+    hist_ts                          timestamp(6),
+    merge_prod_risk_assess_id        integer,
+    merge_prod_risk_assess_vsn_no    integer,
+    srce_risk_assess_id              integer,
+    srce_risk_assess_vsn_no          integer,
+    creat_ts                         timestamp(6)    NOT NULL,
+    creat_user_id                    varchar(34)     NOT NULL,
+    lst_updt_ts                      timestamp(6),
+    lst_updt_user_id                 varchar(34)
+);
+
+
+ALTER TABLE risk_assess ADD 
+    CONSTRAINT risk_assess_PK PRIMARY KEY (risk_assess_id, risk_assess_vsn_no);
+
+ALTER TABLE risk_assess ADD CONSTRAINT Refrisk_assess571
+    FOREIGN KEY (srce_risk_assess_id, srce_risk_assess_vsn_no)
+    REFERENCES risk_assess(risk_assess_id, risk_assess_vsn_no);
+
+ALTER TABLE risk_assess ADD CONSTRAINT Refrisk_assess211
+    FOREIGN KEY (merge_prod_risk_assess_id, merge_prod_risk_assess_vsn_no)
+    REFERENCES risk_assess(risk_assess_id, risk_assess_vsn_no);
+
+ALTER TABLE risk_assess ADD CONSTRAINT Refctry221 
+    FOREIGN KEY (iso_alpha2_ctry_cd)
+    REFERENCES ctry(iso_alpha2_ctry_cd);
+-----------------------------------------------------------------------------
+CREATE TABLE risk_assess_sta
+(
+    risk_assess_sta_cd    smallint    NOT NULL,
+    risk_assess_sta_ds    varchar(50)     NOT NULL
+);
+
+ALTER TABLE risk_assess_sta ADD 
+    CONSTRAINT risk_assess_sta_PK PRIMARY KEY (risk_assess_sta_cd);
+-----------------------------------------------------------------------------
+CREATE TABLE risk_assess_sta_rel
+(
+    risk_assess_id        integer          NOT NULL,
+    risk_assess_vsn_no    integer          NOT NULL,
+    risk_assess_sta_cd    smallint         NOT NULL,
+    sta_cmnt_tx           varchar(1000),
+    creat_user_id         varchar(34)      NOT NULL,
+    creat_ts              timestamp(6)     NOT NULL
+);
+
+ALTER TABLE risk_assess_sta_rel ADD 
+    CONSTRAINT risk_assess_sta_rel_PK PRIMARY KEY (risk_assess_id, risk_assess_vsn_no, risk_assess_sta_cd);
+
+ALTER TABLE risk_assess_sta_rel ADD CONSTRAINT Refrisk_assess111
+    FOREIGN KEY (risk_assess_id, risk_assess_vsn_no)
+    REFERENCES risk_assess(risk_assess_id, risk_assess_vsn_no);
+
+ALTER TABLE risk_assess_sta_rel ADD CONSTRAINT Refrisk_assess_sta591
+    FOREIGN KEY (risk_assess_sta_cd)
+    REFERENCES risk_assess_sta(risk_assess_sta_cd);
+-----------------------------------------------------------------------------
+CREATE TABLE risk_assess_ctgy_rel
+(
+    risk_assess_id         integer         NOT NULL,
+    risk_assess_vsn_no     integer         NOT NULL,
+    risk_ctgy_id           integer         NOT NULL,
+    risk_ctgy_nm           varchar(30)     NOT NULL,
+    risk_assess_ctgy_ds    varchar(500)    NOT NULL,
+    creat_ts               timestamp(6)    NOT NULL,
+    creat_user_id          varchar(34)     NOT NULL,
+    lst_updt_ts            timestamp(6),
+    lst_updt_user_id       varchar(34)
+);
+
+ALTER TABLE risk_assess_ctgy_rel ADD 
+    CONSTRAINT risk_assess_ctgy_rel_PK PRIMARY KEY (risk_assess_id, risk_assess_vsn_no, risk_ctgy_id);
+
+ALTER TABLE risk_assess_ctgy_rel ADD CONSTRAINT Refrisk_assess41 
+    FOREIGN KEY (risk_assess_id, risk_assess_vsn_no)
+    REFERENCES risk_assess(risk_assess_id, risk_assess_vsn_no);
+-----------------------------------------------------------------------------
+CREATE TABLE risk_assess_ctgy_elem_rel(
+    risk_assess_id          integer         NOT NULL,
+    risk_assess_vsn_no      integer         NOT NULL,
+    risk_elem_id            integer         NOT NULL,
+    risk_ctgy_id            integer         NOT NULL,
+    risk_elem_nm            varchar(75)     NOT NULL,
+    risk_assess_elem_ds     varchar(500)    NOT NULL,
+    tm_base_in              boolean         DEFAULT 0 NOT NULL,
+    min_max_mult_eval_cd    character(3)    DEFAULT MAX NOT NULL,
+    prohibited_in           boolean         DEFAULT 0 NOT NULL,
+    creat_ts                timestamp(6)    NOT NULL,
+    creat_user_id           varchar(34)     NOT NULL,
+    lst_updt_ts             timestamp(6),
+    lst_updt_user_id        varchar(34)
+)
+;
+
+
+
+ALTER TABLE risk_assess_ctgy_elem_rel ADD 
+    CONSTRAINT risk_assess_ctgy_elem_rel_PK PRIMARY KEY (risk_assess_id, risk_assess_vsn_no, risk_elem_id);
+
+ALTER TABLE risk_assess_ctgy_elem_rel ADD CONSTRAINT Refrisk_assess_ctgy_rel91 
+    FOREIGN KEY (risk_assess_id, risk_assess_vsn_no, risk_ctgy_id)
+    REFERENCES risk_assess_ctgy_rel(risk_assess_id, risk_assess_vsn_no, risk_ctgy_id);
+
+ALTER TABLE risk_assess_ctgy_elem_rel ADD CONSTRAINT Refrisk_assess581
+    FOREIGN KEY (risk_assess_id, risk_assess_vsn_no)
+    REFERENCES risk_assess(risk_assess_id, risk_assess_vsn_no);
+-----------------------------------------------------------------------------
+CREATE TABLE da_pt
+(
+    da_pt_id                     integer         NOT NULL,
+    da_pt_ds                     varchar(500)    NOT NULL,
+    ovrrd_applicability_in       boolean         DEFAULT 0 NOT NULL,
+    lookback_applicability_in    boolean         DEFAULT 0 NOT NULL,
+    min_max_mult_eval_cd         character(3)    DEFAULT MAX NOT NULL,
+    creat_ts                     timestamp(6)    NOT NULL,
+    creat_user_id                varchar(34)     NOT NULL,
+    lst_updt_user_id             varchar(34),
+    lst_updt_ts                  timestamp(6)
+);
+
+ALTER TABLE da_pt ADD 
+    CONSTRAINT da_pt_PK PRIMARY KEY (da_pt_id);
+-----------------------------------------------------------------------------
+CREATE TABLE risk_mthd
+(
+    risk_mthd_cd    character(3)    NOT NULL,
+    risk_mthd_nm    varchar(20)     NOT NULL
+);
+
+ALTER TABLE risk_mthd ADD 
+    CONSTRAINT risk_mthd_PK PRIMARY KEY (risk_mthd_cd);
+-----------------------------------------------------------------------------
+CREATE TABLE mult_optn
+(
+    mult_optn_id    smallint       NOT NULL,
+    mult_optn_nm    varchar(20)
+);
+
+ALTER TABLE mult_optn ADD 
+    CONSTRAINT mult_optn_PK PRIMARY KEY (mult_optn_id);
+-----------------------------------------------------------------------------
+CREATE TABLE rule_set
+(
+    risk_assess_id          integer          NOT NULL,
+    risk_assess_vsn_no      integer          NOT NULL,
+    risk_elem_id            integer          NOT NULL,
+    rule_set_id             integer          NOT NULL,
+    rule_set_ds             varchar(500)     NOT NULL,
+    cpli_risk_mthd_cd       character(3)     NOT NULL,
+    iso_alpha2_ctry_cd      character(2)     NOT NULL,
+    mult_da_pt_id           integer,
+    dflt_mult_no            numeric(7, 3)    NOT NULL,
+    dflt_wt_no              smallint         NOT NULL,
+    ruleset_mult_no         numeric(7, 3),
+    mult_da_pt_val_fl_nm    varchar(150),
+    mult_da_pt_val_da       json,
+    mult_optn_id            smallint,
+    creat_ts                timestamp(6)     NOT NULL,
+    creat_user_id           varchar(34)      NOT NULL,
+    lst_updt_ts             timestamp(6),
+    lst_updt_user_id        varchar(34)
+);
+
+ALTER TABLE rule_set ADD 
+    CONSTRAINT rule_set_PK PRIMARY KEY (risk_assess_id, risk_assess_vsn_no, risk_elem_id, rule_set_id);
+
+ALTER TABLE rule_set ADD CONSTRAINT Refda_pt631
+    FOREIGN KEY (mult_da_pt_id)
+    REFERENCES da_pt(da_pt_id);
+
+ALTER TABLE rule_set ADD CONSTRAINT Refrisk_assess_ctgy_elem_rel641 
+    FOREIGN KEY (risk_assess_id, risk_assess_vsn_no, risk_elem_id)
+    REFERENCES risk_assess_ctgy_elem_rel(risk_assess_id, risk_assess_vsn_no, risk_elem_id);
+
+ALTER TABLE rule_set ADD CONSTRAINT Refmult_optn661 
+    FOREIGN KEY (mult_optn_id)
+    REFERENCES mult_optn(mult_optn_id);
+
+ALTER TABLE rule_set ADD CONSTRAINT Refctry671
+    FOREIGN KEY (iso_alpha2_ctry_cd)
+    REFERENCES ctry(iso_alpha2_ctry_cd);
+
+ALTER TABLE rule_set ADD CONSTRAINT Refrisk_mthd711
+    FOREIGN KEY (cpli_risk_mthd_cd)
+    REFERENCES risk_mthd(risk_mthd_cd);
+-----------------------------------------------------------------------------
+CREATE TABLE da_opr
+(
+    da_opr_id    smallint       NOT NULL,
+    da_opr_ds    varchar(20)    NOT NULL
+);
+
+ALTER TABLE da_opr ADD 
+    CONSTRAINT da_opr_PK PRIMARY KEY (da_opr_id);
+
+-----------------------------------------------------------------------------
+CREATE TABLE risk_rule
+(
+    risk_assess_id          integer         NOT NULL,
+    risk_assess_vsn_no      integer         NOT NULL,
+    risk_elem_id            integer         NOT NULL,
+    rule_set_id             integer         NOT NULL,
+    rule_id                 integer         NOT NULL,
+    rule_seq_no             integer         NOT NULL,
+    da_pt_id                integer         NOT NULL,
+    da_opr_id               smallint        NOT NULL,
+    da_pt_val               varchar(500),
+    da_pt_val_da            json,
+    da_pt_val_fl_nm         varchar(150),
+    rule_physical_opr_id    character(3),
+    creat_ts                timestamp(6)    NOT NULL,
+    creat_user_id           varchar(34)     NOT NULL,
+    lst_updt_ts             timestamp(6),
+    lst_updt_user_id        varchar(34)
+);
+
+
+
+ALTER TABLE risk_rule ADD 
+    CONSTRAINT risk_rule_PK PRIMARY KEY (risk_assess_id, risk_assess_vsn_no, risk_elem_id, rule_set_id, rule_id);
+
+ALTER TABLE risk_rule ADD CONSTRAINT Refda_pt681 
+    FOREIGN KEY (da_pt_id)
+    REFERENCES da_pt(da_pt_id);
+
+ALTER TABLE risk_rule ADD CONSTRAINT Refda_opr691 
+    FOREIGN KEY (da_opr_id)
+    REFERENCES da_opr(da_opr_id);
+
+ALTER TABLE risk_rule ADD CONSTRAINT Refrule_set701 
+    FOREIGN KEY (risk_assess_id, risk_assess_vsn_no, risk_elem_id, rule_set_id)
+    REFERENCES rule_set(risk_assess_id, risk_assess_vsn_no, risk_elem_id, rule_set_id);
+-----------------------------------------------------------------------------
+

@@ -1,0 +1,202 @@
+[
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.13_Reporting__Dashboards/12.13.1.md",
+        "questions": [
+            "- [ ] What are the specific rendering latency SLAs for the Fundamental Assessments report when filtering by 'Enterprise' vs 'Legal Entity'?",
+            "- [ ] Do we need to support 'drill-down' interactions in the report (e.g., clicking a Center to see underlying Products)?",
+            "- [ ] What is the exact data retention period for the 'As-of' reporting capability? (e.g., 7 years active, 10 years archive)?",
+            "- [ ] Are there specific export formats required beyond Excel/PDF (e.g., JSON, CSV, API access)?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.13_Reporting__Dashboards/12.13.2.md",
+        "questions": [
+            "- [ ] For the 'changes between 2 user specified dates' feature, what is the maximum date range allowed for performance stability?",
+            "- [ ] How should the report handle hierarchy changes (e.g., a Legal Entity moving to a different Center) during the selected date range?",
+            "- [ ] Should the 'Center/Market' specific views account for user entitlements automatically?",
+            "- [ ] Are there pre-defined schedules for generating this report (e.g., nightly batch) or is it purely on-demand?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.13_Reporting__Dashboards/12.13.3.md",
+        "questions": [
+            "- [ ] What is the 'System of Record' for the CRR Risk Distribution data if GCIP is the source of truth for the dashboard?",
+            "- [ ] Does the 'dynamic' distribution chart need to update in near real-time as scores change, or is T+1 sufficient?",
+            "- [ ] For the interface with LUMI, are there specific schema requirements or file formats (Parquet, Avro)?",
+            "- [ ] How should the distribution visualization handle 'long tail' or outlier risk scores?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.13_Reporting__Dashboards/12.13.4.md",
+        "questions": [
+            "- [ ] Are there row limits for Excel exports (e.g., 1M rows)? If exceeded, should we paginate or split files?",
+            "- [ ] For PDF generation, are there specific branding/watermarking requirements?",
+            "- [ ] Should exports follow the same RBAC rules as the on-screen view (i.e. redacted fields)?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.13_Reporting__Dashboards/12.13.5.md",
+        "questions": [
+            "- [ ] How granular should the 'permissions based' access be? (e.g., Report level, Row level, Column level?)",
+            "- [ ] Do we need to log every view/export action for audit purposes?",
+            "- [ ] Can a user share a generated report configuration with another user?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.14_User_InterfaceExperience/12.14.1.md",
+        "questions": [
+            "- [ ] Is there an existing Design System (e.g., OneAmex) that we strictly must follow?",
+            "- [ ] What are the specific browser support requirements (e.g., Chrome, Edge, Safari)?",
+            "- [ ] Does the UI need to support multiple languages/locales from Day 1?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.14_User_InterfaceExperience/12.14.2.md",
+        "questions": [
+            "- [ ] For the 'side by side / overlay' comparison, how should we handle complex nested differences?",
+            "- [ ] When rendering the framework for a specific market, do we need to show inherited Enterprise rules vs. Market specific overrides visually?",
+            "- [ ] What is the expected load time for rendering a full market framework view?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.14_User_InterfaceExperience/12.14.3.md",
+        "questions": [
+            "- [ ] Should the PDF download of the framework visual preserve the interactive state (e.g. expanded nodes)?",
+            "- [ ] Are there security restrictions on downloading framework configurations to local machines?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.14_User_InterfaceExperience/12.14.4.md",
+        "questions": [
+            "- [ ] Does 'configurable' visibility imply a self-service admin UI for managing permissions?",
+            "- [ ] Should users see a 'Access Denied' message or simply not see the menu item if they lack permissions?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.14_User_InterfaceExperience/12.14.5.md",
+        "questions": [
+            "- [ ] How should the 'customization request' UI integrate with the change request workflow (12.2)?",
+            "- [ ] Should the user be able to 'markup' or 'annotate' the current view when submitting a request?",
+            "- [ ] Are there pre-defined templates for customization requests to ensure necessary data is captured?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.15_Customer_level_CRR_view__Report/12.15.1.md",
+        "questions": [
+            "- [ ] What is the key identifier for a 'Unique Customer'? (e.g. ECIF ID, TIN, etc.)",
+            "- [ ] Should the view aggregate risk scores from multiple linked accounts or show them independently?",
+            "- [ ] How should the system handle customers with incomplete data profiles?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.15_Customer_level_CRR_view__Report/12.15.2.md",
+        "questions": [
+            "- [ ] When 'zooming in' to underlying factors, do we need to show the exact rule version active at calculation time?",
+            "- [ ] How do we display contribution percentages for non-linear models or complex algorithms?",
+            "- [ ] Should manual override history include the 'approver' details and timestamp visible on the main view?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.15_Customer_level_CRR_view__Report/12.15.3.md",
+        "questions": [
+            "- [ ] For 'risk rating changes', should we distinguish between 'System Calculation Change' and 'Manual Override Change'?",
+            "- [ ] How deep should the 'underlying attribute changed' logic go? (e.g. if Country Risk changed, do we show the new vs old country score?)",
+            "- [ ] What is the performance expectation for generating this history report for a high-frequency trading customer?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.16_Rescoring_capabilities__/12.16.1.md",
+        "questions": [
+            "- [ ] Defined trigger types for rescoring: Real-time (Event), Scheduled (Batch), Ad-hoc (Manual)?",
+            "- [ ] What is the expected throughput for a full population rescore? (e.g. 50M accounts in 4 hours?)"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.16_Rescoring_capabilities__/12.16.2.md",
+        "questions": [
+            "- [ ] How do we handle 'in-flight' onboarding applications when a framework update is deployed?",
+            "- [ ] Should the system support 'parallel runs' (scoring on both old and new frameworks) for a transition period?",
+            "- [ ] Does a framework update trigger a new 'Assessment Date' for the customer profile?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.16_Rescoring_capabilities__/12.16.3.md",
+        "questions": [
+            "- [ ] How do we manage 'versioning' of scores? (e.g., Score v1.0 vs Score v1.1 on the same day)",
+            "- [ ] Should the rescoring engine automatically prioritize high-risk customers first?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.17_Data_Considerations/12.17.1.md",
+        "questions": [
+            "- [ ] What are the sources of data ingestion? (e.g., Kafka topics, Batch ETL, API)?",
+            "- [ ] How do we handle data quality issues? (Reject record, Default value, Quarantine)?",
+            "- [ ] Is there a Data Dictionary available mapping BRD attributes to source system fields?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.17_Data_Considerations/12.17.2.md",
+        "questions": [
+            "- [ ] Specific latency requirements for data availability after source system update?",
+            "- [ ] Do we need to maintain 'Point-in-Time' data state for historical reconstruction?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.17_Data_Considerations/12.17.3.md",
+        "questions": [
+            "- [ ] What constitutes 'high level of integrity'? Are there specific checksum or reconciliation reports required?",
+            "- [ ] Should the system flag 'stale' data attributes that haven't been updated in X months?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.17_Data_Considerations/12.17.4.md",
+        "questions": [
+            "- [ ] For LUMI analysis, is there a preferred format? (e.g. Hive tables, S3 bucket with Parquet)?",
+            "- [ ] Does 'all historical data' imply infinite retention for analysis, or can we archive to cold storage after X years?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.17_Data_Considerations/12.17.5.md",
+        "questions": [
+            "- [ ] How do we export the 'logic' (weightings/rules) to LUMI? As metadata JSON? As executable code?",
+            "- [ ] Should the export include the changelog of who modified the weightings and when?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.17_Data_Considerations/12.17.6.md",
+        "questions": [
+            "- [ ] What is the mechanism to identify 'Legal Hold' status on a record? (Flag in source system?)",
+            "- [ ] Are there specific encryption requirements for Legal Hold data exports?",
+            "- [ ] Does Legal Hold data need to be segregated physically or just logically?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.17_Data_Considerations/12.17.7.md",
+        "questions": [
+            "- [ ] How does the system handle 'Right to be Forgotten' (GDPR/CCPA) vs CRR Retention requirements?",
+            "- [ ] Detailed definition of 'Purge' process: Is it hard delete or soft delete?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.20_Notifications/12.20.1.md",
+        "questions": [
+            "- [ ] Who are the target recipients for notifications? (System Admins, Compliance Officers, Relationship Managers?)",
+            "- [ ] Can users configure their own notification preferences (e.g. digest vs real-time)?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.20_Notifications/12.20.2.md",
+        "questions": [
+            "- [ ] How do we determine the 'underlying reason' algorithmically for complex multi-factor breaches?",
+            "- [ ] Should the notification email/message include deep links to the specific customer record?",
+            "- [ ] Are there sensitivity labels required on the notification content (e.g. 'Confidential')?"
+        ]
+    },
+    {
+        "file_path": "/Users/satvikjain/Downloads/Projects/CRR_Final/Backlog/12.20_Notifications/12.20.3.md",
+        "questions": [
+            "- [ ] What are the fallback mechanisms if a notification fails to send?",
+            "- [ ] Do we need a 'Notification History' view in the UI for audit purposes?"
+        ]
+    }
+]

@@ -1,0 +1,2 @@
+Name,Notes,"Target Date",Description,Active,"Custom Field 1","Custom Field 2","Custom Field 3","Custom Field 4","Custom Field 5",Type
+"Sample Name (required field)","Sample Notes","Sample Date in format: MM/dd/yyyy","Sample Description",True,"Sample Custom Field 1","Sample Custom Field 2","Sample Custom Field 3","Sample Custom Field 4","Sample Custom Field 5",Deployment

@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRR - Unified Sandbox Prototype</title>
+    <style>
+        /* --- AMEX DESIGN TOKENS --- */
+        :root {
+            --amex-navy: #002663;
+            --amex-bright-blue: #006FCF;
+            --amex-bright-blue-hover: #005bb5;
+            --bg-gray: #F4F4F4;
+            --border-light: #D0D0D0;
+            --text-dark: #333333;
+            --text-light: #555555;
+            --white: #FFFFFF;
+            --error-red: #D50000;
+            --success-green: #008f4c;
+            --font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        /* --- RESET & LAYOUT --- */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-family);
+            background-color: var(--bg-gray);
+            color: var(--text-dark);
+            font-size: 14px;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* --- LEFT ICON BAR --- */
+        .global-sidebar {
+            width: 60px;
+            background-color: var(--amex-navy);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 15px;
+            z-index: 20;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .global-icon {
+            width: 36px;
+            height: 36px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #AAB;
+            transition: all 0.2s;
+        }
+
+        .global-icon:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .global-icon.active {
+            color: white;
+            background-color: var(--amex-bright-blue);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* --- MAIN APP AREA --- */
+        .main-app {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-gray);
+            overflow: hidden;
+        }
+
+        /* HEADER */
+        .top-header {
+            height: 50px;
+            background-color: var(--white);
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            justify-content: space-between;
+        }
+
+        .brand-block {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-text {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--amex-navy);
+            text-transform: uppercase;
+        }
+
+        .app-partition {
+            font-size: 16px;
+            font-weight: 300;
+            color: #555;
+        }
+
+        .user-block {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-light);
+        }
+
+        /* DYNAMIC NAV TABS */
+        .nav-tabs-container {
+            background-color: var(--white);
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            gap: 5px;
+            height: 45px;
+            align-items: flex-end;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 10px 15px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-light);
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            margin-bottom: -1px;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            background-color: #f9f9f9;
+            color: var(--amex-bright-blue);
+        }
+
+        .nav-tab.active {
+            color: var(--amex-navy);
+            font-weight: 700;
+            background-color: var(--bg-gray);
+            border-color: var(--border-light);
+            border-bottom-color: var(--bg-gray);
+        }
+
+        .tab-close {
+            font-size: 16px;
+            line-height: 1;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+        }
+
+        .tab-close:hover {
+            background: #ddd;
+            color: #333;
+        }
+
+        /* WORKSPACE */
+        .workspace-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- UI COMPONENTS --- */
+        .btn {
+            height: 36px;
+            padding: 0 16px;
+            border-radius: 2px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+        }
+
+        .btn-primary {
+            background-color: var(--amex-bright-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--amex-bright-blue-hover);
+        }
+
+        .btn-secondary {
+            background-color: white;
+            border-color: var(--amex-bright-blue);
+            color: var(--amex-bright-blue);
+        }
+
+        .btn-secondary:hover {
+            background-color: #f0f8ff;
+        }
+
+        .btn-disabled {
+            opacity: 0.5;
+            background: #ddd !important;
+            border-color: #ccc !important;
+            color: #888 !important;
+            cursor: not-allowed;
+        }
+
+        .table-container {
+            background: white;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #FAFAFA;
+            color: #666;
+            font-size: 11px;
+            text-transform: uppercase;
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        td {
+            padding: 12px 15px;
+            color: #333;
+            border-bottom: 1px solid #EEE;
+            font-size: 13px;
+        }
+
+        tr:hover td {
+            background-color: #F8F9FA;
+        }
+
+        .link-text {
+            color: var(--amex-bright-blue);
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .link-text:hover {
+            text-decoration: underline;
+        }
+
+        .page-intro {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .page-title {
+            font-size: 22px;
+            margin: 0;
+            font-weight: 300;
+            color: var(--amex-navy);
+        }
+
+        /* Breadcrumbs */
+        .breadcrumb-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #777;
+            margin-bottom: 15px;
+            padding: 8px 12px;
+            background: #fff;
+            border: 1px solid #ddd;
+            width: fit-content;
+            border-radius: 4px;
+        }
+
+        .bc-item {
+            color: var(--amex-bright-blue);
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .bc-item:hover {
+            text-decoration: underline;
+        }
+
+        .bc-item.current {
+            color: #333;
+            cursor: default;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        /* Unified Sandbox Bar */
+        .unified-bar {
+            background: white;
+            padding: 15px 20px;
+            border: 1px solid var(--border-light);
+            border-left: 5px solid var(--amex-bright-blue);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .unified-select {
+            height: 36px;
+            padding: 0 10px;
+            font-size: 14px;
+            border: 1px solid #CCC;
+            min-width: 250px;
+            color: var(--amex-navy);
+            font-weight: 700;
+        }
+
+        /* List/Grid Views */
+        .tree-row {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+        }
+
+        .tree-row:hover {
+            background-color: #f0f7ff;
+        }
+
+        .tree-icon {
+            width: 20px;
+            display: inline-block;
+            text-align: center;
+            margin-right: 10px;
+            font-size: 16px;
+        }
+
+        /* MODALS */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 100;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-window {
+            background: white;
+            width: 600px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border-radius: 2px;
+        }
+
+        .modal-header {
+            padding: 15px 20px;
+            background: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            font-weight: 700;
+            color: var(--amex-navy);
+            font-size: 16px;
+        }
+
+        .modal-body {
+            padding: 25px;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #ddd;
+            background: #fff;
+            text-align: right;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            color: #333;
+            border-radius: 2px;
+        }
+
+        .form-control:focus {
+            border-color: var(--amex-bright-blue);
+            outline: none;
+        }
+
+        .form-hint {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .error-msg {
+            color: var(--error-red);
+            font-size: 11px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        /* History specific */
+        .log-list {
+            border: 1px solid #ddd;
+            background: #fdfdfd;
+            height: 180px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .log-item {
+            padding: 8px 12px;
+            font-size: 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+
+        .log-tag {
+            font-weight: bold;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 2px;
+            height: fit-content;
+        }
+
+        .tag-rule {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .tag-asset {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .tag-fa {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        /* Edit Rule Layout */
+        .edit-rule-layout {
+            display: flex;
+            height: 100%;
+        }
+
+        .edit-rule-main {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #fff;
+        }
+
+        .edit-rule-sidebar {
+            width: 300px;
+            background: #f9f9f9;
+            border-left: 1px solid #ddd;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 1. LEFT SIDEBAR -->
+    <div class="global-sidebar">
+        <div class="global-icon" title="Home"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg></div>
+        <div class="global-icon" title="ISP"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path
+                    d="M4 13h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zm0 8h6c.55 0 1-.45 1-1v-4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1zm10 0h6c.55 0 1-.45 1-1v-8c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1v8c0 .55.45 1 1 1zM14 4v4c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1z" />
+            </svg></div>
+        <div class="global-icon active" title="CRR"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path
+                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5z" />
+            </svg></div>
+    </div>
+
+    <!-- 2. MAIN APP -->
+    <div class="main-app">
+        <!-- Header -->
+        <div class="top-header">
+            <div class="brand-block"><span class="logo-text">American Express</span> | <span
+                    class="app-partition">Global Risk</span></div>
+            <div class="user-block">SATVIK JAIN</div>
+        </div>
+
+        <!-- Dynamic Tabs -->
+        <div class="nav-tabs-container" id="nav-tabs">
+            <!-- Injected via JS -->
+        </div>
+
+        <!-- Workspace -->
+        <div class="workspace-area" id="workspace">
+            <!-- Injected via JS -->
+        </div>
+    </div>
+
+    <!-- MODAL CONTAINERS -->
+    <div class="modal-overlay" id="generic-modal"></div>
+
+    <!-- LOGIC -->
+    <script>
+        // --- DATA STORE ---
+        const state = {
+            activeTabId: 'sandbox',
+            tabs: [
+                { id: 'dashboard', label: 'CRR Dashboard', close: false },
+                { id: 'sandbox', label: 'Sandbox', close: false },
+                { id: 'assets', label: 'Asset Manager', close: false },
+                { id: 'fundamental', label: 'Fund. Assessment', close: false },
+                { id: 'reporting', label: 'Reporting', close: false }
+            ],
+            // Sandbox State
+            sandboxes: [
+                { id: 101, name: 'SB_KYC_INDIA_2026', desc: 'Testing new KYC norms for IN market', scope: 'India', status: 'Active' },
+                { id: 102, name: 'SB_GDPR_EU_V2', desc: 'Compliance checks', scope: 'Germany', status: 'Draft' }
+            ],
+            currSandbox: null,
+            sbComponent: 'rules', // rules | assets | fundamental
+            sbBreadcrumbs: [], // Array of { name, level, id }
+
+            // Assets Data
+            assets: [
+                { id: 1, name: 'Sanctioned_Entities_Glo', desc: 'Global sanctioned list', ref: 'REF_SANC_LIST_01', updated: '2026-01-08' }
+            ],
+
+            // Rules Data Tree
+            tree: {
+                'root': [
+                    { id: 'cat1', name: 'Credit Risk', type: 'cat' },
+                    { id: 'cat2', name: 'Fraud Risk', type: 'cat' }
+                ],
+                'cat1': [{ id: 'elem1', name: 'Repayment History', type: 'elem' }, { id: 'elem2', name: 'Debt Ratio', type: 'elem' }],
+                'elem1': [{ id: 'rs1', name: 'Delinquency Checks', type: 'ruleset' }],
+                'rs1': [{ id: 'rule1', name: 'Check 30 Days Past Due', type: 'rule' }, { id: 'rule2', name: 'Check 90 Days Past Due', type: 'rule' }]
+            },
+
+            // Edit Rule Context
+            editingRule: null
+        };
+
+        // --- RENDER NAV ---
+        function renderNav() {
+            const el = document.getElementById('nav-tabs');
+            el.innerHTML = state.tabs.map(t => `
+                <div class="nav-tab ${state.activeTabId === t.id ? 'active' : ''}" onclick="switchTab('${t.id}')">
+                    ${t.label}
+                    ${t.close ? `<span class="tab-close" onclick="closeTab('${t.id}', event)">×</span>` : ''}
+                </div>
+            `).join('');
+            renderWorkspace();
+        }
+
+        function switchTab(id) { state.activeTabId = id; renderNav(); }
+
+        function closeTab(id, e) {
+            e.stopPropagation();
+            state.tabs = state.tabs.filter(t => t.id !== id);
+            if (state.activeTabId === id) state.activeTabId = 'sandbox';
+            renderNav();
+        }
+
+        function openEditRuleTab(ruleName) {
+            state.editingRule = ruleName;
+            const existing = state.tabs.find(t => t.id === 'edit_rule');
+            if (!existing) state.tabs.push({ id: 'edit_rule', label: `Edit: ${ruleName}`, close: true });
+            state.activeTabId = 'edit_rule';
+            renderNav();
+        }
+
+        // --- RENDER WORKSPACE ---
+        function renderWorkspace() {
+            const ws = document.getElementById('workspace');
+            ws.innerHTML = '';
+
+            const tid = state.activeTabId;
+
+            if (tid === 'sandbox') {
+                if (state.currSandbox) renderSandboxDetail(ws);
+                else renderSandboxList(ws);
+            }
+            else if (tid === 'edit_rule') renderEditRule(ws);
+            else if (['dashboard', 'assets', 'fundamental', 'reporting'].includes(tid)) {
+                ws.innerHTML = `<div style="padding:40px; text-align:center; color:#999;"><h3>${tid.toUpperCase()}</h3><p>Global Module Placeholder</p></div>`;
+            }
+        }
+
+        /* 1. SANDBOX LIST */
+        function renderSandboxList(container) {
+            container.innerHTML = `
+                <div class="page-intro">
+                    <h2 class="page-title">Sandbox Management</h2>
+                    <button class="btn btn-primary" onclick="openCreateSBModal()">+ Add New Sandbox</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Name</th><th>Description</th><th>Scope</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody>
+                            ${state.sandboxes.map(s => `
+                                <tr>
+                                    <td><a class="link-text" onclick="enterSB(${s.id})">${s.name}</a></td>
+                                    <td>${s.desc}</td>
+                                    <td>${s.scope}</td>
+                                    <td><span style="font-weight:bold; color:${s.status === 'Active' ? 'var(--success-green)' : '#555'}">${s.status}</span></td>
+                                    <td><span class="link-text" style="font-size:12px;">Edit</span></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        /* 2. SANDBOX DETAIL (Unified) */
+        function renderSandboxDetail(container) {
+            // Breadcrumbs
+            let bc = `<div class="breadcrumb-bar">
+                <a class="bc-item" onclick="exitSB()">All Sandboxes</a>
+                <span style="color:#ccc">></span>
+                <a class="bc-item ${state.sbBreadcrumbs.length === 0 ? 'current' : ''}" onclick="resetBC()">${state.currSandbox.name}</a>`;
+            state.sbBreadcrumbs.forEach((b, i) => {
+                const isLast = i === state.sbBreadcrumbs.length - 1;
+                bc += `<span style="color:#ccc">></span> <a class="bc-item ${isLast ? 'current' : ''}" ${!isLast ? `onclick="navBC(${i})"` : ''}>${b.name}</a>`;
+            });
+            bc += `</div>`;
+
+            // Action Header
+            const header = `
+                <div class="page-intro" style="border-bottom:1px solid #ddd; padding-bottom:15px;">
+                    <div><h2 class="page-title">${state.currSandbox.name}</h2></div>
+                    <div><button class="btn btn-primary" onclick="openHistoryModal()">Simulation</button></div>
+                </div>
+            `;
+
+            // Unified Dropdown
+            const unified = `
+                <div class="unified-bar">
+                    <label style="font-weight:700; color:#555; text-transform:uppercase; font-size:11px;">Active Component</label>
+                    <select class="form-control" style="width:250px; font-weight:bold; color:var(--amex-navy);"
+                        onchange="state.sbComponent=this.value; renderNav()">
+                        <option value="rules" ${state.sbComponent === 'rules' ? 'selected' : ''}>Rules Engine</option>
+                        <option value="assets" ${state.sbComponent === 'assets' ? 'selected' : ''}>Asset Manager</option>
+                        <option value="fundamental" ${state.sbComponent === 'fundamental' ? 'selected' : ''}>Fundamental Assessments</option>
+                    </select>
+                </div>
+            `;
+
+            // Body
+            const body = document.createElement('div');
+            body.style.cssText = "background:white; border:1px solid #ddd; flex:1; display:flex; flex-direction:column;";
+            if (state.sbComponent === 'rules') renderRulesTree(body);
+            else if (state.sbComponent === 'assets') renderAssetsList(body);
+            else renderFAList(body);
+
+            container.innerHTML = bc + header + unified;
+            container.appendChild(body);
+        }
+
+        /* RULES TREE */
+        function renderRulesTree(container) {
+            const parentId = state.sbBreadcrumbs.length > 0 ? state.sbBreadcrumbs[state.sbBreadcrumbs.length - 1].id : 'root';
+            const items = state.tree[parentId] || [];
+
+            let html = `<div style="padding:0;">`;
+            if (items.length === 0) {
+                html += `<div style="padding:30px; text-align:center; color:#999;">No items found in this section.</div>`;
+            } else {
+                items.forEach(itm => {
+                    const icon = getIcon(itm.type);
+                    if (itm.type === 'rule') {
+                        html += `
+                            <div class="tree-row" onclick="openEditRuleTab('${itm.name}')">
+                                <div class="tree-label">${icon} ${itm.name}</div>
+                                <div style="font-size:11px; color:var(--amex-bright-blue);">Edit Rule ↗</div>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div class="tree-row" onclick="pushBC('${itm.name}', '${itm.id}', '${itm.type}')">
+                                <div class="tree-label">${icon} ${itm.name}</div>
+                                <div style="color:#ccc;">></div>
+                            </div>
+                        `;
+                    }
+                });
+            }
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+        function getIcon(t) {
+            if (t === 'cat') return '📂';
+            if (t === 'elem') return '🔹';
+            if (t === 'ruleset') return '🔸';
+            return '📄';
+        }
+
+        /* ASSETS */
+        function renderAssetsList(container) {
+            container.innerHTML = `
+                <div style="padding:15px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                    <h4 style="margin:0; font-weight:400;">Assets List</h4>
+                    <button class="btn btn-secondary" onclick="openAssetModal()">+ Add Asset</button>
+                </div>
+                <table style="width:100%;">
+                    <thead><tr style="background:#fafafa; text-align:left;"><th style="padding:10px;">Name</th><th>Ref. List</th><th>Updated</th><th>Action</th></tr></thead>
+                    <tbody>
+                        ${state.assets.map(a => `
+                            <tr style="border-bottom:1px solid #eee;">
+                                <td style="padding:10px;">${a.name}</td>
+                                <td>${a.ref}</td>
+                                <td>${a.updated}</td>
+                                <td><a class="link-text" onclick="openAssetModal(${a.id})">Edit</a></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        /* FUNDAMENTAL ASSESSMENT */
+        function renderFAList(container) {
+            container.innerHTML = `
+                <div style="display:flex; height:100%;">
+                    <!-- Left List -->
+                    <div style="width:250px; border-right:1px solid #ddd; background:#f9f9f9;">
+                        <div style="padding:15px; font-weight:bold; border-bottom:1px solid #eee;">Assessment Types</div>
+                        <div style="padding:12px; background:white; border-left:4px solid var(--amex-bright-blue); font-weight:600;">Geography Risk</div>
+                        <div style="padding:12px; cursor:pointer; color:#666;">Product Risk</div>
+                        <div style="padding:12px; cursor:pointer; color:#666;">Customer Type</div>
+                    </div>
+                    <!-- Right Detail -->
+                    <div style="flex:1; padding:20px;">
+                        <div style="display:flex; justify-content:space-between;">
+                            <h3 style="margin-top:0;">Geography Risk</h3>
+                            <div style="text-align:right;">
+                                <div style="font-size:11px; color:#666;">MULTIPLIER</div>
+                                <div id="fa-score" style="font-size:24px; font-weight:bold; color:var(--amex-navy);">1.2x</div>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top:20px;">
+                            <label class="form-label">Q1: Is the region classified as High Risk by FATF?</label>
+                            <select class="form-control" onchange="updateFAScore(this)">
+                                <option value="no">No (Standard)</option>
+                                <option value="yes">Yes (High Risk)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Q2: Cross-border volume check?</label>
+                            <select class="form-control"><option>Pass</option><option>Fail</option></select>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        function updateFAScore(el) {
+            const sc = document.getElementById('fa-score');
+            if (el.value === 'yes') { sc.innerText = '2.5x'; sc.style.color = 'var(--error-red)'; }
+            else { sc.innerText = '1.2x'; sc.style.color = 'var(--amex-navy)'; }
+        }
+
+        /* 3. EDIT RULE TAB */
+        function renderEditRule(container) {
+            container.innerHTML = `
+                <div class="edit-rule-layout">
+                    <div class="edit-rule-main">
+                        <div style="margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                            <h2 style="color:var(--amex-navy); margin:0;">${state.editingRule}</h2>
+                            <p style="color:#666; margin:5px 0 0 0;">Configure rule logic and weighting.</p>
+                        </div>
+                        
+                        <!-- Logic Builder -->
+                        <div style="background:#fcfcfc; border:1px solid #ddd; padding:20px; border-radius:4px;">
+                            <h4 style="margin-top:0;">Rule Logic</h4>
+                            <div style="display:flex; gap:10px; margin-bottom:15px; align-items:flex-end;">
+                                <div style="flex:2;">
+                                    <label class="form-label">Data Point</label>
+                                    <select class="form-control"><option>Delinquency_Davs_Count</option></select>
+                                </div>
+                                <div style="flex:1;">
+                                    <label class="form-label">Operator</label>
+                                    <select class="form-control"><option>Greater Than</option></select>
+                                </div>
+                                <div style="flex:2;">
+                                    <label class="form-label">Value</label>
+                                    <input type="text" class="form-control" value="30">
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary">+ Add Condition</button>
+                        </div>
+                    </div>
+                    
+                    <div class="edit-rule-sidebar">
+                        <h4 style="margin-top:0;">Configuration</h4>
+                        <div class="form-group">
+                            <label class="form-label">Weighting</label>
+                            <input type="number" class="form-control" value="10">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Multiplier Type</label>
+                            <select class="form-control">
+                                <option>Fixed Value</option>
+                                <option>Fundamental Assessment</option>
+                            </select>
+                        </div>
+                        <div style="margin-top:40px;">
+                            <button class="btn btn-primary" style="width:100%;">Save Changes</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        /* --- MODALS LOGIC --- */
+        const modal = document.getElementById('generic-modal');
+
+        function openCreateSBModal() {
+            modal.innerHTML = `
+                <div class="modal-window">
+                    <div class="modal-header"><span>Create Sandbox</span><span onclick="closeModal()" style="cursor:pointer;">✕</span></div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label class="form-label">Name <span style="color:red">*</span></label>
+                            <input id="sb-name" class="form-control" oninput="validateSBName(this)">
+                            <div id="sb-err" class="error-msg">Use characters and underscores only.</div>
+                        </div>
+                        <div class="form-group"><label class="form-label">Description</label><input id="sb-desc" class="form-control"></div>
+                        <div class="form-group"><label class="form-label">Scope</label><select id="sb-scope" class="form-control"><option>India</option><option>Germany</option></select></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button class="btn btn-primary btn-disabled" id="btn-create" disabled onclick="createSB()">Create</button>
+                    </div>
+                </div>
+            `;
+            modal.style.display = 'flex';
+        }
+        function validateSBName(el) {
+            const valid = /^[a-zA-Z0-9_]+$/.test(el.value);
+            const err = document.getElementById('sb-err');
+            const btn = document.getElementById('btn-create');
+            if (!valid && el.value) { err.style.display = 'block'; btn.classList.add('btn-disabled'); btn.disabled = true; }
+            else { err.style.display = 'none'; btn.classList.remove('btn-disabled'); btn.disabled = !el.value; }
+        }
+        function createSB() {
+            const name = document.getElementById('sb-name').value;
+            const scope = document.getElementById('sb-scope').value;
+            state.sandboxes.push({ id: Date.now(), name, desc: 'New Sandbox', scope, status: 'Draft' });
+            closeModal(); renderNav();
+        }
+
+        function openAssetModal(id) {
+            const asset = id ? state.assets.find(a => a.id === id) : null;
+            modal.innerHTML = `
+                <div class="modal-window">
+                    <div class="modal-header"><span>${asset ? 'Edit' : 'Add'} Asset</span><span onclick="closeModal()" style="cursor:pointer;">✕</span></div>
+                    <div class="modal-body">
+                        <div class="form-group"><label class="form-label">Name</label><input class="form-control" value="${asset ? asset.name : ''}"></div>
+                        <div class="form-group">
+                            <label class="form-label">Reference List Name</label>
+                            <input class="form-control" value="${asset ? asset.ref : ''}" ${asset ? 'disabled style="background:#eee"' : ''}>
+                            ${asset ? '<div class="form-hint">Reference list cannot be changed in edit mode.</div>' : ''}
+                        </div>
+                        <div class="form-group"><label class="form-label">File</label><input type="file" class="form-control"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button class="btn btn-primary" onclick="closeModal()">Save</button>
+                    </div>
+                </div>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        function openHistoryModal() {
+            modal.innerHTML = `
+                <div class="modal-window">
+                    <div class="modal-header"><span>Simulation History</span><span onclick="closeModal()" style="cursor:pointer;">✕</span></div>
+                    <div class="modal-body">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                            <select class="form-control" style="width:200px;"><option>Show All Changes</option><option>Rules Only</option></select>
+                            <a class="link-text">Download Report</a>
+                        </div>
+                        <div class="log-list">
+                            <div class="log-item"><span class="log-tag tag-rule">RULE</span> Changed threshold for 'Delinquency' to 30</div>
+                            <div class="log-item"><span class="log-tag tag-asset">ASSET</span> Updated Sanction List v3</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Reason (Mandatory)</label>
+                            <textarea id="reason" class="form-control" rows="3" oninput="checkReason()"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="alert('Simulation Skipped'); closeModal();">Skip</button>
+                        <button class="btn btn-primary btn-disabled" id="btn-hist" disabled onclick="alert('Simulation Started'); closeModal();">Submit</button>
+                    </div>
+                </div>
+            `;
+            modal.style.display = 'flex';
+        }
+        function checkReason() {
+            const v = document.getElementById('reason').value;
+            const b = document.getElementById('btn-hist');
+            if (v) { b.disabled = false; b.classList.remove('btn-disabled'); }
+            else { b.disabled = true; b.classList.add('btn-disabled'); }
+        }
+
+        function closeModal() { modal.style.display = 'none'; }
+
+        // --- NAVIGATION LOGIC ---
+        function enterSB(id) {
+            state.currSandbox = state.sandboxes.find(s => s.id === id);
+            state.sbBreadcrumbs = []; // reset
+            renderNav();
+        }
+        function exitSB() { state.currSandbox = null; renderNav(); }
+        function resetBC() { state.sbBreadcrumbs = []; renderNav(); }
+        function pushBC(name, id, type) { state.sbBreadcrumbs.push({ name, id, type }); renderNav(); }
+        function navBC(idx) { state.sbBreadcrumbs = state.sbBreadcrumbs.slice(0, idx + 1); renderNav(); }
+
+        // Bootsrap
+        renderNav();
+
+    </script>
+</body>
+
+</html>

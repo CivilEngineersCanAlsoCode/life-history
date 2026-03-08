@@ -1,0 +1,66 @@
+{
+    "12.8.10": [
+        "Should the display of modified components isolate changes made in *this* simulation vs concurrent Global updates?",
+        "Do we need a JSON/XML export of the 'Simulation Definition' for offline analysis?"
+    ],
+    "12.8.11": [
+        "If an Enterprise list update triggers a massive simulation, how do we prevent resource contention with Production?",
+        "Should 'Impact at each level' (Entity/Market/Enterprise) be separate reports or a nested view?"
+    ],
+    "12.8.12": [
+        "Does 'Version Control' in Sandbox align with Git-like semantics (branches, commits)?",
+        "How long are sandbox versions retained before auto-cleanup?"
+    ],
+    "12.8.13": [
+        "If a merge conflict occurs (e.g., two users changed the same Risk Element weight), who wins?",
+        "Does the system provide a 3-way merge tool for complex conflicts?"
+    ],
+    "12.8.14": [
+        "Is the mapping update 'Global' for the simulation or can we test market-specific mappings?",
+        "Does changing the mapping require a re-score of all 10M customers in the sandbox?"
+    ],
+    "12.8.15": [
+        "Is the '5 hours for 10M accounts' SLA still valid with the new cloud infrastructure?",
+        "Should we allow 'Sampling' (e.g., run on 10% of customers) to get faster results in <30 mins?"
+    ],
+    "12.9.2": [
+        "For 'Zoom In', do we pre-aggregate data at all levels or compute on the fly?",
+        "Are there privacy restrictions on viewing granular data for certain markets in the Sandbox?"
+    ],
+    "12.9.3": [
+        "Does the PDF download need to include the charts/graphs or just tabular data?",
+        "Is there a row limit for the spreadsheet export?"
+    ],
+    "12.9.4": [
+        "Should 'View-Only' users be hidden from the 'Active Users' list in the simulation?",
+        "Can a View-Only user add comments/annotations to the results?"
+    ],
+    "12.9.5": [
+        "For 'Direct Comparison', do we highlight the 'Risk Class Jumpers' (e.g. Low -> High) explicitly?",
+        "Do we need a 'Matrix View' (Production Rating vs Sandbox Rating)?"
+    ],
+    "12.9.6": [
+        "Does the 'List of Changes' export format need to match the 'Change Request' import format?",
+        "Should this report be digitally signed for audit purposes?"
+    ],
+    "12.10.2": [
+        "Can the two approvers be peers, or must one be senior (Manager level)?",
+        "Does the system enforce 'Segregation of Duties' (e.g., Developer cannot be Approver)?"
+    ],
+    "12.11.2": [
+        "Does the 'Snapshot' need to be a reconstructible system state or just a PDF report?",
+        "Is 'Attestation' a checkbox or a workflow with E-Signature?"
+    ],
+    "12.12.3": [
+        "For sub-2-second response, do we have a fallback if the calculation times out?",
+        "Does 'Real-Time' scoring block the onboarding UI until a response is received?"
+    ],
+    "12.12.4": [
+        "How do we handle 'Alert Storms' (1000s of alerts at once)?",
+        "Do distinct alert categories (EDD vs Sanctions) trigger different scoring rules?"
+    ],
+    "12.12.5": [
+        "How flexible is the integration architecture to accept new data fields defined in future BRD chapters?",
+        "Do we need a 'Schema Registry' for agile updates?"
+    ]
+}

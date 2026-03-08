@@ -1,0 +1,2 @@
+"Display Color",Expedite,Ready,Actuals,Blocked,"Blocked Reason",Estimate,State,"To Do","Work Product",Name,Description,Notes,Owner
+#ff0000,True,True,1,True,"Sample Blocked Reason",1,Defined,1,"US65935 (required field)","Sample Name (required field)","Sample Description","Sample Notes","Sample username: name@example.com"
