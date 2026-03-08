@@ -165,10 +165,9 @@ class TranslationLayer:
         logger = logging.getLogger(__name__)
         missing_terms = []
 
-        for original_term, preserved_term in PRESERVED_TERMS.items():
-            # Check if term appears in either original or preserved form
-            if preserved_term.lower() not in text.lower():
-                missing_terms.append(preserved_term)
+        for term in PRESERVED_TERMS:
+            if term.lower() not in text.lower():
+                missing_terms.append(term)
 
         if missing_terms:
             logger.warning(f"Preserved terms may have been modified: {missing_terms}")
