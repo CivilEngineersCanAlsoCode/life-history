@@ -1,0 +1,223 @@
+{
+  "test_cases": [
+    {
+      "name": "Quantitative Conflict: Salary Ranges",
+      "documents": [
+        {
+          "doc_id": "doc_1",
+          "text": "Backend engineer salaries range from $150,000 to $200,000 depending on experience and location.",
+          "similarity_score": 0.95,
+          "metadata": {
+            "source": "industry_report_2024",
+            "date": "2024-03-01",
+            "author": "glassdoor",
+            "category": "career"
+          }
+        },
+        {
+          "doc_id": "doc_2",
+          "text": "Senior backend engineers earn between $120,000 and $180,000 annually across tech companies.",
+          "similarity_score": 0.91,
+          "metadata": {
+            "source": "internal_notes",
+            "date": "2024-03-08",
+            "author": "self",
+            "category": "career"
+          }
+        }
+      ],
+      "expected_conflict": {
+        "conflict_type": "QUANTITATIVE",
+        "severity": "low",
+        "conflict_score": 0.25,
+        "claim1": "$150k-$200k",
+        "claim2": "$120k-$180k",
+        "reason": "Ranges overlap significantly (80% overlap), minor boundary differences"
+      }
+    },
+    {
+      "name": "Semantic Conflict: Different Interpretations",
+      "documents": [
+        {
+          "doc_id": "doc_3",
+          "text": "I led the technical redesign of the Walmart Spark API, making architectural decisions and mentoring the team.",
+          "similarity_score": 0.94,
+          "metadata": {
+            "source": "resume",
+            "date": "2024-01-15",
+            "author": "self",
+            "category": "career"
+          }
+        },
+        {
+          "doc_id": "doc_4",
+          "text": "I contributed to the Walmart Spark API improvements and worked with the team on documentation.",
+          "similarity_score": 0.88,
+          "metadata": {
+            "source": "internal_notes",
+            "date": "2023-06-01",
+            "author": "self",
+            "category": "career"
+          }
+        }
+      ],
+      "expected_conflict": {
+        "conflict_type": "SEMANTIC",
+        "severity": "high",
+        "conflict_score": 0.75,
+        "claim1": "Led redesign",
+        "claim2": "Contributed to improvements",
+        "reason": "Different levels of leadership claim (led vs contributed)"
+      }
+    },
+    {
+      "name": "Direct Contradiction: Project Outcome",
+      "documents": [
+        {
+          "doc_id": "doc_5",
+          "text": "The CGB project was a major success, improving citizen engagement by 45% and reducing response time by 60%.",
+          "similarity_score": 0.92,
+          "metadata": {
+            "source": "performance_review",
+            "date": "2024-02-01",
+            "author": "manager",
+            "category": "career"
+          }
+        },
+        {
+          "doc_id": "doc_6",
+          "text": "The CGB initiative faced challenges and was ultimately deprecated due to limited adoption and technical debt.",
+          "similarity_score": 0.89,
+          "metadata": {
+            "source": "project_post_mortem",
+            "date": "2024-02-15",
+            "author": "technical_lead",
+            "category": "career"
+          }
+        }
+      ],
+      "expected_conflict": {
+        "conflict_type": "QUALITATIVE",
+        "severity": "high",
+        "conflict_score": 0.88,
+        "claim1": "Major success",
+        "claim2": "Ultimately deprecated",
+        "reason": "Directly opposite outcomes (success vs failure)"
+      }
+    },
+    {
+      "name": "No Conflict: Complementary Facts",
+      "documents": [
+        {
+          "doc_id": "doc_7",
+          "text": "Started at Sprinklr in April 2022 as a Software Engineer working on backend systems.",
+          "similarity_score": 0.90,
+          "metadata": {
+            "source": "resume",
+            "date": "2024-01-01",
+            "author": "self",
+            "category": "career"
+          }
+        },
+        {
+          "doc_id": "doc_8",
+          "text": "During my first month at Sprinklr, I focused on understanding the microservices architecture and onboarding to the team.",
+          "similarity_score": 0.85,
+          "metadata": {
+            "source": "internal_notes",
+            "date": "2024-03-08",
+            "author": "self",
+            "category": "career"
+          }
+        }
+      ],
+      "expected_conflict": {
+        "conflict_type": "NONE",
+        "severity": "none",
+        "conflict_score": 0.0,
+        "reason": "No contradiction - complementary timeline"
+      }
+    },
+    {
+      "name": "Date Discrepancy: End Date Conflict",
+      "documents": [
+        {
+          "doc_id": "doc_9",
+          "text": "Worked at American Express from July 2024 to December 2024, building the CRR AML Risk Scoring Engine.",
+          "similarity_score": 0.93,
+          "metadata": {
+            "source": "linkedin",
+            "date": "2024-12-01",
+            "author": "self",
+            "category": "career"
+          }
+        },
+        {
+          "doc_id": "doc_10",
+          "text": "Still working at American Express as of March 2026, continuing development on the Risk Scoring Engine.",
+          "similarity_score": 0.91,
+          "metadata": {
+            "source": "internal_notes",
+            "date": "2026-03-08",
+            "author": "self",
+            "category": "career"
+          }
+        }
+      ],
+      "expected_conflict": {
+        "conflict_type": "QUANTITATIVE",
+        "severity": "high",
+        "conflict_score": 0.65,
+        "claim1": "Dec 2024",
+        "claim2": "Mar 2026 (ongoing)",
+        "reason": "End date mismatch - employment duration conflict"
+      }
+    }
+  ],
+  "metadata_templates": {
+    "source_types": {
+      "official": {
+        "credibility_multiplier": 1.0,
+        "examples": ["official_policy", "perf_review", "company_handbook", "verified_data"]
+      },
+      "expert": {
+        "credibility_multiplier": 0.8,
+        "examples": ["manager_feedback", "mentor_notes", "expert_opinion", "technical_lead"]
+      },
+      "personal": {
+        "credibility_multiplier": 0.7,
+        "examples": ["self_notes", "resume", "personal_blog", "internal_notes"]
+      },
+      "community": {
+        "credibility_multiplier": 0.5,
+        "examples": ["glassdoor", "reddit", "github_issues", "community_forum"]
+      },
+      "archive": {
+        "credibility_multiplier": 0.4,
+        "examples": ["old_blog", "cached_page", "wayback_machine", "deprecated_docs"]
+      }
+    },
+    "document_age_scoring": {
+      "recent": {
+        "days": 90,
+        "score": 1.0,
+        "label": "< 3 months"
+      },
+      "current": {
+        "days": 180,
+        "score": 0.8,
+        "label": "3-6 months"
+      },
+      "stale": {
+        "days": 365,
+        "score": 0.6,
+        "label": "6-12 months"
+      },
+      "old": {
+        "days": 999999,
+        "score": 0.4,
+        "label": "> 12 months"
+      }
+    }
+  }
+}

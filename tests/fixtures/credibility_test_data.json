@@ -1,0 +1,197 @@
+{
+  "test_cases": [
+    {
+      "name": "Expert Recent Source",
+      "document": {
+        "doc_id": "doc_expert_2024",
+        "text": "According to industry research from Q1 2024, remote work adoption in tech is at 65% with hybrid models prevalent.",
+        "metadata": {
+          "source": "gartner_report",
+          "date": "2024-03-01",
+          "author": "gartner_analyst",
+          "category": "career",
+          "type": "research_report",
+          "authority": "official"
+        },
+        "similarity_score": 0.95
+      },
+      "expected_credibility": {
+        "credibility": 0.95,
+        "category": "expert",
+        "recency_score": 1.0,
+        "authority_score": 1.0,
+        "accuracy_score": 0.9,
+        "explanation": "Recent (Q1 2024), official research, verified facts"
+      }
+    },
+    {
+      "name": "Personal Old Source",
+      "document": {
+        "doc_id": "doc_personal_2021",
+        "text": "When I started in 2021, most companies were still transitioning back to office.",
+        "metadata": {
+          "source": "personal_blog",
+          "date": "2021-06-15",
+          "author": "self",
+          "category": "career",
+          "type": "personal_blog",
+          "authority": "personal"
+        },
+        "similarity_score": 0.72
+      },
+      "expected_credibility": {
+        "credibility": 0.53,
+        "category": "personal",
+        "recency_score": 0.4,
+        "authority_score": 0.7,
+        "accuracy_score": 0.7,
+        "explanation": "Old source (2021), personal account, limited verification"
+      }
+    },
+    {
+      "name": "Verified Recent Source",
+      "document": {
+        "doc_id": "doc_verified_2024",
+        "text": "Promotion awarded Q1 2024 for technical leadership and impact on 3 major projects.",
+        "metadata": {
+          "source": "performance_review",
+          "date": "2024-03-08",
+          "author": "manager",
+          "category": "career",
+          "type": "official_review",
+          "authority": "verified"
+        },
+        "similarity_score": 0.93
+      },
+      "expected_credibility": {
+        "credibility": 0.87,
+        "category": "verified",
+        "recency_score": 1.0,
+        "authority_score": 0.8,
+        "accuracy_score": 0.9,
+        "explanation": "Recent (2024), manager verification, high authority"
+      }
+    },
+    {
+      "name": "Community Source",
+      "document": {
+        "doc_id": "doc_community",
+        "text": "Glassdoor review: Great learning opportunity, decent pay, some management issues",
+        "metadata": {
+          "source": "glassdoor",
+          "date": "2024-02-01",
+          "author": "anonymous_reviewer",
+          "category": "career",
+          "type": "community_review",
+          "authority": "community"
+        },
+        "similarity_score": 0.68
+      },
+      "expected_credibility": {
+        "credibility": 0.58,
+        "category": "questionable",
+        "recency_score": 1.0,
+        "authority_score": 0.5,
+        "accuracy_score": 0.6,
+        "explanation": "Recent but community source, unverified, anonymous"
+      }
+    },
+    {
+      "name": "Corroborated Fact",
+      "document": {
+        "doc_id": "doc_corroborated",
+        "text": "CGB project metrics: 45% improvement in citizen engagement, 60% reduction in response time.",
+        "metadata": {
+          "source": "internal_notes",
+          "date": "2024-03-08",
+          "author": "self",
+          "category": "career",
+          "type": "metrics",
+          "authority": "personal",
+          "corroborated_by": ["performance_review", "project_dashboard"]
+        },
+        "similarity_score": 0.89
+      },
+      "expected_credibility": {
+        "credibility": 0.84,
+        "category": "verified",
+        "recency_score": 1.0,
+        "authority_score": 0.8,
+        "accuracy_score": 0.9,
+        "explanation": "Recent, corroborated by 2+ sources (performance review + metrics dashboard)"
+      }
+    },
+    {
+      "name": "Outdated Archive Source",
+      "document": {
+        "doc_id": "doc_archive_2019",
+        "text": "Python 2 is still widely used in production systems. Here's how to migrate to Python 3...",
+        "metadata": {
+          "source": "old_blog",
+          "date": "2019-06-01",
+          "author": "legacy_author",
+          "category": "technical",
+          "type": "tutorial",
+          "authority": "archive"
+        },
+        "similarity_score": 0.65
+      },
+      "expected_credibility": {
+        "credibility": 0.38,
+        "category": "questionable",
+        "recency_score": 0.4,
+        "authority_score": 0.5,
+        "accuracy_score": 0.3,
+        "explanation": "Very old (2019), likely outdated information, archived content"
+      }
+    },
+    {
+      "name": "Contradicted Source",
+      "document": {
+        "doc_id": "doc_contradicted",
+        "text": "The project was a complete failure with 0% adoption rate.",
+        "metadata": {
+          "source": "internal_notes",
+          "date": "2024-02-01",
+          "author": "other_team",
+          "category": "career",
+          "type": "assessment",
+          "authority": "personal",
+          "contradicted_by": ["performance_review", "project_dashboard"]
+        },
+        "similarity_score": 0.78
+      },
+      "expected_credibility": {
+        "credibility": 0.32,
+        "category": "questionable",
+        "recency_score": 1.0,
+        "authority_score": 0.7,
+        "accuracy_score": 0.2,
+        "explanation": "Contradicted by 2+ higher-authority sources (review, metrics)"
+      }
+    }
+  ],
+  "scoring_formula": {
+    "overall_credibility": "recency × 0.3 + authority × 0.4 + accuracy × 0.3",
+    "component_ranges": {
+      "recency": {
+        "0-1": "Normalized by document age (< 3mo = 1.0, >12mo = 0.4)"
+      },
+      "authority": {
+        "0.3": "Unknown/archive",
+        "0.5": "Community/unverified",
+        "0.7": "Personal/expert opinion",
+        "0.8": "Professional/verified",
+        "1.0": "Official/researched"
+      },
+      "accuracy": {
+        "0.2": "Contradicted by other sources",
+        "0.3": "Single source, potentially outdated",
+        "0.5": "Potentially outdated, some verification",
+        "0.7": "Single credible source",
+        "0.9": "Corroborated by 2+ sources",
+        "1.0": "Verified fact, multiple corroboration"
+      }
+    }
+  }
+}

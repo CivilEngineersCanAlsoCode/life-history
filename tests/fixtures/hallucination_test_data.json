@@ -1,0 +1,211 @@
+{
+  "test_cases": [
+    {
+      "name": "Rule 2 Violation: Low Confidence (< 0.50)",
+      "input": {
+        "answer": "I think backend engineers earn around $200k on average.",
+        "docs": [
+          {
+            "doc_id": "doc_1",
+            "text": "Some people earn more than $200k but it depends on many factors.",
+            "similarity_score": 0.42
+          }
+        ],
+        "groundedness_score": 0.42
+      },
+      "expected_output": {
+        "is_valid": false,
+        "violation": "confidence_floor",
+        "rejection_reason": "Groundedness below 0.50 threshold - insufficient information to answer"
+      }
+    },
+    {
+      "name": "Rule 3 Violation: Date Integrity (Old Document)",
+      "input": {
+        "answer": "The typical tech job market in 2024 is dominated by remote positions.",
+        "docs": [
+          {
+            "doc_id": "doc_2019",
+            "text": "In 2019, most tech companies required office presence.",
+            "metadata": {"date": "2019-06-15"},
+            "similarity_score": 0.65
+          }
+        ],
+        "user_query": "What is the current tech job market in 2024?",
+        "groundedness_score": 0.65
+      },
+      "expected_output": {
+        "is_valid": false,
+        "violation": "date_integrity",
+        "rejection_reason": "Supporting document too old (June 2019) for question about 2024 market trends"
+      }
+    },
+    {
+      "name": "Rule 5 Violation: Numeric Inconsistency",
+      "input": {
+        "answer": "CGB improved citizen engagement by approximately 45% and response time by 60%.",
+        "docs": [
+          {
+            "doc_id": "doc_metrics_a",
+            "text": "CGB improved citizen engagement by 47%.",
+            "similarity_score": 0.92
+          },
+          {
+            "doc_id": "doc_metrics_b",
+            "text": "Response time reduction was approximately 58%.",
+            "similarity_score": 0.89
+          }
+        ],
+        "groundedness_score": 0.90
+      },
+      "expected_output": {
+        "is_valid": true,
+        "reason": "Numeric values are within ±10% tolerance (45% vs 47%, 60% vs 58%)"
+      }
+    },
+    {
+      "name": "Rule 5 Violation: Numeric Mismatch (> ±10%)",
+      "input": {
+        "answer": "Project X saved the company $2 million annually.",
+        "docs": [
+          {
+            "doc_id": "doc_cost_1",
+            "text": "Project X cost savings were estimated at $1.2 million per year.",
+            "similarity_score": 0.88
+          },
+          {
+            "doc_id": "doc_cost_2",
+            "text": "Actual cost reduction achieved: $1.3 million annually.",
+            "similarity_score": 0.86
+          }
+        ],
+        "groundedness_score": 0.87
+      },
+      "expected_output": {
+        "is_valid": false,
+        "violation": "factuality_checks",
+        "rejection_reason": "Numeric discrepancy: answer claims $2M but documents say $1.2-1.3M (>10% difference)"
+      }
+    },
+    {
+      "name": "Rule 1 Violation: Too Many Documents",
+      "input": {
+        "answer": "Synthesized answer combining insights from all 5 documents.",
+        "docs": [
+          {"doc_id": "d1", "similarity_score": 0.95},
+          {"doc_id": "d2", "similarity_score": 0.92},
+          {"doc_id": "d3", "similarity_score": 0.90},
+          {"doc_id": "d4", "similarity_score": 0.88},
+          {"doc_id": "d5", "similarity_score": 0.85}
+        ]
+      },
+      "expected_output": {
+        "is_valid": false,
+        "violation": "synthesis_limits",
+        "rejection_reason": "Exceeded maximum 3 documents per answer (5 provided)"
+      }
+    },
+    {
+      "name": "Rule 2 Violation: Conflict + Low Credibility",
+      "input": {
+        "answer": "Based on conflicting sources.",
+        "docs": [
+          {
+            "doc_id": "doc_a",
+            "text": "Project was a success.",
+            "similarity_score": 0.75
+          },
+          {
+            "doc_id": "doc_b",
+            "text": "Project was a failure.",
+            "similarity_score": 0.72
+          }
+        ],
+        "groundedness_score": 0.62,
+        "conflicts": [
+          {
+            "conflict_score": 0.88,
+            "severity": "high",
+            "claim1": "Project was a success",
+            "claim2": "Project was a failure"
+          }
+        ]
+      },
+      "expected_output": {
+        "is_valid": false,
+        "violation": "confidence_floor",
+        "rejection_reason": "Multiple sources disagree - insufficient grounding to provide definitive answer"
+      }
+    },
+    {
+      "name": "All Rules Pass: Valid Answer",
+      "input": {
+        "answer": "I led the technical redesign of the Walmart Spark API, improving performance by 45% and reducing latency by 3 seconds.",
+        "docs": [
+          {
+            "doc_id": "resume_2024",
+            "text": "Led technical redesign of Walmart Spark API with 45% performance improvement.",
+            "metadata": {
+              "date": "2024-01-15",
+              "source": "resume",
+              "author": "self",
+              "authority": "personal"
+            },
+            "similarity_score": 0.96
+          },
+          {
+            "doc_id": "perf_metrics",
+            "text": "Latency reduction: 3 seconds (from 7s to 4s response time).",
+            "metadata": {
+              "date": "2024-02-01",
+              "source": "project_dashboard",
+              "author": "system",
+              "authority": "verified"
+            },
+            "similarity_score": 0.94
+          }
+        ],
+        "groundedness_score": 0.92,
+        "user_query": "Tell me about your Walmart Spark API work",
+        "conflicts": []
+      },
+      "expected_output": {
+        "is_valid": true,
+        "passed_rules": [
+          "synthesis_limits",
+          "confidence_floor",
+          "date_integrity",
+          "authority_matching",
+          "factuality_checks"
+        ],
+        "reason": "Recent docs, verified sources, numeric consistency, no conflicts"
+      }
+    }
+  ],
+  "rule_reference": {
+    "rule_1_synthesis_limits": {
+      "description": "Max 3 documents, no synthesis across contradictions",
+      "error_type": "error"
+    },
+    "rule_2_confidence_floor": {
+      "description": "Groundedness must be >= 0.50",
+      "error_type": "error",
+      "special": "Flag if conflicts + low credibility even if >= 0.50"
+    },
+    "rule_3_date_integrity": {
+      "description": "Don't cite old docs for recent questions",
+      "error_type": "error",
+      "threshold": "365 days (customizable)"
+    },
+    "rule_4_authority_matching": {
+      "description": "Match doc type to question type",
+      "error_type": "warning",
+      "example": "Career question should use expert or personal source"
+    },
+    "rule_5_factuality_checks": {
+      "description": "Numeric consistency (±10%), date alignment, name verification",
+      "error_type": "error",
+      "numeric_tolerance": 0.1
+    }
+  }
+}
