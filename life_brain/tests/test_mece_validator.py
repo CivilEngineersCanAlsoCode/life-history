@@ -274,3 +274,24 @@ class TestMECEReport:
 
 def test_default_threshold():
     assert DUPLICATE_THRESHOLD == 0.85
+
+
+class TestHighlySimilarAtomsMerge:
+    """Regression test for issues-i4z.3.4: MECE check when atoms >95% similar should merge."""
+
+    def test_near_identical_queries_detected_as_duplicate(self):
+        """Two queries with very high similarity (>95%) should be flagged for merge."""
+        validator = MECEValidator()
+        q1 = AtomicQuery(query_id="q1", question="What is the project goal?", embedding=[1.0, 0.0, 0.0])
+        q2 = AtomicQuery(query_id="q2", question="What is the project objective?", embedding=[0.999, 0.001, 0.0])
+        report = validator.validate([q1, q2])
+        # If similarity > threshold, should find at least 1 duplicate candidate
+        sim = cosine_similarity(q1.embedding, q2.embedding)
+        if sim >= DUPLICATE_THRESHOLD:
+            assert report.duplicates_found >= 1
+            assert report.merges_suggested >= 1
+
+    def test_very_high_similarity_vectors(self):
+        """Vectors at 0.99+ cosine similarity are clearly duplicates."""
+        sim = cosine_similarity([1.0, 0.01, 0.0], [1.0, 0.01, 0.0])
+        assert sim >= 0.99

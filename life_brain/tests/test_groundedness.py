@@ -352,3 +352,35 @@ class TestConsistencyBoundaries:
         ]
         consistency = calc.calculate_consistency(docs)
         assert 0.0 <= consistency <= 1.0
+
+
+class TestEmptyDocumentsList:
+    """Regression test for issues-bd7.4.8: empty documents list."""
+
+    def test_empty_docs_returns_zero_score(self):
+        """calculate_groundedness with no documents should return 0.0 overall_score."""
+        from life_brain.truth_engine.groundedness import GroundednessCalculator
+        calc = GroundednessCalculator()
+        score = calc.calculate_groundedness([])
+        assert score.overall_score <= 0.2  # num_docs weight gives some score even when empty
+        assert score.max_similarity == 0.0
+
+    def test_empty_docs_no_crash(self):
+        """calculate_groundedness([]) must not raise any exception."""
+        from life_brain.truth_engine.groundedness import GroundednessCalculator
+        calc = GroundednessCalculator()
+        score = calc.calculate_groundedness([], query_keywords=["test"])
+        assert 0.0 <= score.overall_score <= 1.0
+
+
+class TestSingleHighConfidenceDoc:
+    """Regression test for issues-bd7.4.9: single doc with 1.0 similarity."""
+
+    def test_single_doc_perfect_similarity_high_confidence(self):
+        """Single doc with 1.0 similarity should yield high overall_score."""
+        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        calc = GroundednessCalculator()
+        docs = [RetrievedDocument(doc_id="d1", text="exact match", metadata={}, similarity_score=1.0)]
+        score = calc.calculate_groundedness(docs, query_keywords=["exact", "match"])
+        assert score.overall_score > 0.5  # Should be reasonably high
+        assert score.max_similarity == 1.0

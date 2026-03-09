@@ -46,13 +46,14 @@ class TestFormatExpertIntroduction:
         assert expert_name in expert.get("key", "") or "satya" in intro.lower()
 
     def test_format_unknown_expert(self):
-        """Test formatting for unknown expert raises error."""
+        """Unknown expert returns graceful fallback message (not ValueError)."""
         introducer = ExpertIntroducer()
-
-        with pytest.raises(ValueError) as exc:
-            introducer.format_expert_introduction("unknown_expert_xyz")
-
-        assert "Unknown expert" in str(exc.value)
+        result = introducer.format_expert_introduction("unknown_expert_xyz")
+        # Returns tuple (message, expert_dict)
+        assert isinstance(result, tuple)
+        message, expert_dict = result
+        assert isinstance(message, str)
+        assert len(message) > 0
 
     def test_format_includes_real_name(self):
         """Test formatted introduction includes real name."""
@@ -524,3 +525,22 @@ class TestIntegrationExpertIntroduction:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class TestMissingExpertProfile:
+    """Regression test for issues-ly2.4.3: expert introduction when expert profile missing."""
+
+    def test_unknown_expert_intro_does_not_crash(self):
+        """get_expert_intro() with unknown expert_id must not crash."""
+        from life_brain.conversation.expert_introduction import ExpertIntroducer
+        introducer = ExpertIntroducer()
+        result = introducer.format_expert_introduction("nonexistent_expert_xyz", "C1")
+        # Should return something (even if None/empty/default) not raise
+        assert isinstance(result, tuple) and isinstance(result[0], str)
+
+    def test_unknown_expert_summary_no_crash(self):
+        """get_expert_summary() with unknown expert_id must not crash."""
+        from life_brain.conversation.expert_introduction import ExpertIntroducer
+        introducer = ExpertIntroducer()
+        summary = introducer.get_expert_summary("does_not_exist")
+        assert summary is None or isinstance(summary, dict)

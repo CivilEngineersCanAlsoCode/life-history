@@ -225,3 +225,24 @@ class TestCodeBlockStripping:
         result = detect_emotion(msg)
         assert result.primary_emotion == "neutral"
         assert result.suggest_mental_health is False
+
+
+class TestNonEnglishText:
+    """Regression test for issues-ly2.14.8: sentiment detection with non-English/non-Hindi text."""
+
+    def test_arabic_text_returns_neutral(self):
+        """Arabic/Chinese/etc text should not crash and defaults to neutral."""
+        result = detect_emotion("مرحبا كيف حالك اليوم")
+        assert result.primary_emotion in ["neutral", "stressed", "anxious", "frustrated", "excited", "uncertain"]
+        assert 0.0 <= result.confidence <= 1.0
+
+    def test_mixed_script_no_crash(self):
+        """Text with mixed scripts should not crash."""
+        result = detect_emotion("Hello 你好 مرحبا")
+        assert isinstance(result.primary_emotion, str)
+
+    def test_emoji_only_no_crash(self):
+        """Emoji-only messages should not crash."""
+        result = detect_emotion("😊🎉🚀")
+        assert isinstance(result.primary_emotion, str)
+        assert 0.0 <= result.confidence <= 1.0

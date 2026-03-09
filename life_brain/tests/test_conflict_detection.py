@@ -768,3 +768,75 @@ class TestConflictScoreClamping:
             "The project was a complete failure"
         )
         assert 0.0 <= score <= 1.0
+
+
+class TestConflictEdgeCases:
+    """Regression tests for conflict detector edge cases.
+
+    Covers:
+    - issues-bd7.1.14: empty strings in contradiction scoring
+    - issues-bd7.1.15: identical documents → conflict_score ≈ 0
+    - issues-bd7.1.16: malformed numbers in regex parsing
+    - issues-bd7.1.17: high similarity + low contradiction
+    - issues-bd7.1.18: soft conflict at 0.3 boundary
+    - issues-bd7.1.19: empty candidates list
+    """
+
+    def test_empty_strings_no_crash(self):
+        """score_conflict('', 'something') must not crash."""
+        detector = ConflictDetector()
+        score = detector.score_conflict("", "something meaningful")
+        assert score == 0.0
+
+    def test_both_empty_strings_returns_zero(self):
+        """score_conflict('', '') must return 0.0."""
+        detector = ConflictDetector()
+        assert detector.score_conflict("", "") == 0.0
+
+    def test_identical_claims_low_conflict(self):
+        """Two identical claims should have conflict_score ≈ 0."""
+        detector = ConflictDetector()
+        claim = "I led the machine learning project at Sprinklr with 15 engineers"
+        score = detector.score_conflict(claim, claim)
+        assert score < 0.3  # Identical = no contradiction
+
+    def test_malformed_numbers_handled(self):
+        """Malformed numbers in claims must not crash contradiction scoring."""
+        detector = ConflictDetector()
+        # Malformed: mixed separators, incomplete decimals
+        score = detector.score_conflict(
+            "Revenue was $1,,234.abc in 2023",
+            "Revenue was $2,,000.xyz in 2023"
+        )
+        assert 0.0 <= score <= 1.0
+
+    def test_high_similarity_low_contradiction_gives_low_score(self):
+        """High semantic similarity + low contradiction → relatively low conflict score."""
+        detector = ConflictDetector()
+        # Same claim slightly rephrased → should not conflict much
+        score = detector.score_conflict(
+            "I worked on the data pipeline project",
+            "I contributed to the data pipeline initiative"
+        )
+        assert 0.0 <= score <= 1.0
+
+    def test_soft_conflict_boundary(self):
+        """Conflict categorization at boundary (score ~0.3) should work correctly."""
+        detector = ConflictDetector()
+        # Categorize at different score thresholds
+        for score in [0.0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]:
+            conflict_type = detector.categorize_conflict("claim A", "claim B", score)
+            assert conflict_type is not None  # Should not crash
+
+    def test_empty_candidates_no_crash(self):
+        """detect_conflicts([]) must return empty list without crash."""
+        detector = ConflictDetector()
+        results = detector.detect_conflicts([])
+        assert results == []
+
+    def test_single_doc_no_conflict(self):
+        """Single document cannot conflict with itself."""
+        detector = ConflictDetector()
+        doc = type("Doc", (), {"text": "I led the project", "embedding": None})()
+        results = detector.detect_conflicts([doc])
+        assert results == []

@@ -508,3 +508,39 @@ class TestShortQuestionRejection:
         from life_brain.db.document_validator import DocumentValidator
         valid, errors = DocumentValidator.validate_question_answer("?", "Sufficient answer text here")
         assert valid is False
+
+
+class TestConfidenceBoundaryValues:
+    """Regression test for issues-6vx.1.18: confidence values at exact boundaries (0.0, 1.0)."""
+
+    def test_confidence_exactly_0(self):
+        """Metadata with confidence=0.0 must be valid (boundary value)."""
+        from life_brain.db.document_validator import DocumentValidator
+        validator = DocumentValidator()
+        metadata = {
+            "doc_id": "test_001",
+            "type": "qa_pair",
+            "domain": "career",
+            "company": "TestCorp",
+            "project": "ProjectX",
+            "date_range": "2024-01",
+            "source": "interview",
+            "privacy": "private",
+            "confidence": 0.0,  # Exact lower boundary
+            "question": "What is the project?",
+            "answer": "The project is a test.",
+            "tags": [],
+        }
+        errors = validator.validate_field_values(metadata)
+        # 0.0 confidence should not produce a range error
+        confidence_errors = [e for e in errors if e.field == "confidence"]
+        assert len(confidence_errors) == 0
+
+    def test_confidence_exactly_1(self):
+        """Metadata with confidence=1.0 must be valid (boundary value)."""
+        from life_brain.db.document_validator import DocumentValidator
+        validator = DocumentValidator()
+        metadata = {"confidence": 1.0}
+        errors = validator.validate_field_values(metadata)
+        confidence_errors = [e for e in errors if e.field == "confidence"]
+        assert len(confidence_errors) == 0

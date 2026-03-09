@@ -42,7 +42,7 @@ class ExpertIntroducer:
         """
         expert = get_expert(expert_name)
         if not expert:
-            raise ValueError(f"Unknown expert: {expert_name}")
+            return f"Expert '{expert_name}' ka profile available nahi hai.", {}
 
         real_name = expert.get("real_name", expert_name)
         role = expert.get("role", "Expert")

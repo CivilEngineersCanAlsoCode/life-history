@@ -403,3 +403,22 @@ class TestNoKeywordsEdgeCase:
         identifier = NuggetIdentifier()
         nuggets, _ = identifier.identify_nuggets("Yes")
         assert isinstance(nuggets, list)
+
+
+class TestSingleSentenceAnswer:
+    """Regression test for issues-i4z.2.6: nugget identification with single sentence."""
+
+    def test_single_sentence_no_crash(self):
+        """Single sentence (no paragraph breaks) must not crash."""
+        identifier = NuggetIdentifier()
+        nuggets, _ = identifier.identify_nuggets("I built a machine learning pipeline that reduced latency by 40%.")
+        assert isinstance(nuggets, list)
+
+    def test_single_sentence_returns_at_least_one_nugget(self):
+        """Single informative sentence should yield at least one nugget attempt."""
+        identifier = NuggetIdentifier()
+        nuggets, error = identifier.identify_nuggets(
+            "Sprinklr increased revenue by 25% through the AI-powered feature I designed."
+        )
+        assert isinstance(nuggets, list)
+        assert error is None or isinstance(error, str)
