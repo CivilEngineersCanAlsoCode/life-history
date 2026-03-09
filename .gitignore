@@ -9,3 +9,37 @@ venv/
 # Dolt database files (added by bd init)
 .dolt/
 *.db
+
+# Personal data & dev artifacts (kept locally, not tracked)
+archive/
+context/KNOWLEDGE-INDEX.md
+context/interview-prep/
+context/templates/metrics-tracking.md
+
+# Agent dev workflows (only sync-life.md is user-facing)
+.agents/workflows/sync-beads.md
+.agents/workflows/sync-session.md
+
+# Dev-only modules (dead code — no production imports)
+life_brain/logging_framework.py
+life_brain/monitoring_dashboard.py
+life_brain/testing/
+
+# Dev-only test files (tests for archived modules)
+life_brain/tests/test_logging_framework.py
+life_brain/tests/test_monitoring_dashboard.py
+life_brain/tests/test_load_testing.py
+life_brain/tests/test_latency_testing.py
+life_brain/tests/test_concurrent_testing.py
+life_brain/tests/test_resilience_testing.py
+
+# Dev config
+AGENTS.md
+docs/architecture.md
+docs/E4_API_REFERENCE.md
+
+# Beads issue tracker
+.beads/
+
+# Claude local settings
+.claude/
