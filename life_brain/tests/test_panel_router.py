@@ -511,3 +511,79 @@ class TestPanelRouter:
         stats = router.get_panel_statistics()
         assert stats["total_sessions"] >= 1
         assert stats["avg_panel_size"] >= 3
+
+
+class TestPanelTimeout:
+    """Regression tests for issues-0if: panel with 3 experts — timeout handling."""
+
+    def test_panel_no_timeout_completes_all_experts(self):
+        """Panel without timeout must return all 3 expert responses."""
+        from life_brain.conversation.panel_router import PanelRouter
+        router = PanelRouter()
+        experts = [e.name for e in router.roster.get_all()[:3]]
+        if len(experts) < 3:
+            return  # Skip if not enough experts configured
+
+        session, error = router.panel_router(
+            "timeout_test_1",
+            "What is the best career move?",
+            expert_names=experts,
+        )
+        assert session is not None
+        # No timeout → all experts should respond
+        assert len(session.responses) == len(experts)
+
+    def test_panel_zero_timeout_returns_partial(self):
+        """timeout_seconds=0 forces immediate timeout — session returned with error."""
+        from life_brain.conversation.panel_router import PanelRouter
+        router = PanelRouter()
+        experts = [e.name for e in router.roster.get_all()[:3]]
+        if len(experts) < 3:
+            return
+
+        session, error = router.panel_router(
+            "timeout_test_2",
+            "What is the best strategy?",
+            expert_names=experts,
+            timeout_seconds=0.0,  # Immediate timeout
+        )
+        # Should return session (partial) AND an error message
+        assert error is not None
+        assert "timeout" in error.lower()
+        assert session is not None  # Session is still returned (partial)
+
+    def test_panel_large_timeout_completes(self):
+        """Panel with large timeout (60s) should complete all experts without triggering timeout."""
+        from life_brain.conversation.panel_router import PanelRouter
+        router = PanelRouter()
+        experts = [e.name for e in router.roster.get_all()[:3]]
+        if len(experts) < 3:
+            return
+
+        session, error = router.panel_router(
+            "timeout_test_3",
+            "How to handle stress?",
+            expert_names=experts,
+            timeout_seconds=60.0,
+        )
+        assert error is None  # No timeout triggered
+        assert session is not None
+        assert len(session.responses) > 0
+
+    def test_panel_timeout_error_includes_count(self):
+        """Timeout error message should state how many experts responded."""
+        from life_brain.conversation.panel_router import PanelRouter
+        router = PanelRouter()
+        experts = [e.name for e in router.roster.get_all()[:3]]
+        if len(experts) < 3:
+            return
+
+        _, error = router.panel_router(
+            "timeout_test_4",
+            "What is the best investment?",
+            expert_names=experts,
+            timeout_seconds=0.0,
+        )
+        if error:
+            # Error should mention expert count fraction
+            assert "/" in error or "experts" in error.lower()

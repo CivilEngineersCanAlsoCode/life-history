@@ -9,6 +9,7 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+import time
 
 from life_brain.experts.roster import ExpertRoster, Expert
 
@@ -125,6 +126,7 @@ class PanelRouter:
         category: str = "",
         urgency: int = 3,
         depth_level: int = 3,
+        timeout_seconds: Optional[float] = None,
     ) -> Tuple[Optional[PanelSession], Optional[str]]:
         """
         Route question to multiple experts sequentially.
@@ -166,7 +168,10 @@ class PanelRouter:
         )
 
         # Get responses from each expert
+        start_time = time.monotonic()
         for idx, name in enumerate(expert_names):
+            if timeout_seconds is not None and (time.monotonic() - start_time) >= timeout_seconds:
+                return session, f"Panel timeout: only {idx}/{len(expert_names)} experts responded within {timeout_seconds}s"
             expert = self.roster.get_by_name(name)
             if expert:
                 # Determine role
