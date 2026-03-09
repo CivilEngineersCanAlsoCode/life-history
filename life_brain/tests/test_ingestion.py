@@ -10,7 +10,7 @@ Covers:
 
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-from life_brain.db.ingestion import QAPair, add_to_life_brain, batch_ingest, validate_document_batch
+from life_brain.core.ingestion import QAPair, add_to_life_brain, batch_ingest, validate_document_batch
 
 # Helper: Generate text > 100 chars
 def long_text(prefix="Q: Answer?"):
@@ -45,8 +45,8 @@ class TestQAPair:
 class TestAddToLifeBrain:
     """Test add_to_life_brain function."""
 
-    @patch('life_brain.db.ingestion.ChromaDBManager')
-    @patch('life_brain.db.ingestion.conflict_check')
+    @patch('life_brain.core.ingestion.ChromaDBManager')
+    @patch('life_brain.core.ingestion.conflict_check')
     def test_add_success_first_try(self, mock_conflict, mock_manager_class):
         """Test successful addition on first try."""
         mock_manager = Mock()
@@ -64,7 +64,7 @@ class TestAddToLifeBrain:
         assert doc_id == "test_doc"
         mock_collection.upsert.assert_called_once()
 
-    @patch('life_brain.db.ingestion.ChromaDBManager')
+    @patch('life_brain.core.ingestion.ChromaDBManager')
     def test_add_fails_metadata_validation(self, mock_manager_class):
         """Test failure on metadata validation."""
         mock_manager = Mock()
@@ -80,7 +80,7 @@ class TestAddToLifeBrain:
                 metadata={}
             )
 
-    @patch('life_brain.db.ingestion.ChromaDBManager')
+    @patch('life_brain.core.ingestion.ChromaDBManager')
     def test_add_fails_text_too_short(self, mock_manager_class):
         """Test failure when text is too short."""
         mock_manager = Mock()
@@ -96,8 +96,8 @@ class TestAddToLifeBrain:
             )
         assert "100" in str(exc.value)
 
-    @patch('life_brain.db.ingestion.ChromaDBManager')
-    @patch('life_brain.db.ingestion.conflict_check')
+    @patch('life_brain.core.ingestion.ChromaDBManager')
+    @patch('life_brain.core.ingestion.conflict_check')
     def test_add_hard_conflict_detected(self, mock_conflict, mock_manager_class):
         """Test hard conflict is detected during ingestion."""
         mock_manager = Mock()
@@ -119,8 +119,8 @@ class TestAddToLifeBrain:
         assert doc_id == "conflict"
         mock_collection.upsert.assert_called_once()
 
-    @patch('life_brain.db.ingestion.ChromaDBManager')
-    @patch('life_brain.db.ingestion.conflict_check')
+    @patch('life_brain.core.ingestion.ChromaDBManager')
+    @patch('life_brain.core.ingestion.conflict_check')
     def test_add_soft_conflict_proceeds(self, mock_conflict, mock_manager_class):
         """Test soft conflict proceeds."""
         mock_manager = Mock()
@@ -139,8 +139,8 @@ class TestAddToLifeBrain:
 
         assert doc_id == "soft"
 
-    @patch('life_brain.db.ingestion.ChromaDBManager')
-    @patch('life_brain.db.ingestion.conflict_check')
+    @patch('life_brain.core.ingestion.ChromaDBManager')
+    @patch('life_brain.core.ingestion.conflict_check')
     def test_add_enrichment_detected(self, mock_conflict, mock_manager_class):
         """Test enrichment scenario."""
         mock_manager = Mock()
@@ -163,7 +163,7 @@ class TestAddToLifeBrain:
 class TestBatchIngest:
     """Test batch_ingest function."""
 
-    @patch('life_brain.db.ingestion.add_to_life_brain')
+    @patch('life_brain.core.ingestion.add_to_life_brain')
     def test_batch_all_success(self, mock_add):
         """Test batch where all succeed."""
         mock_add.side_effect = lambda **kw: kw.get("doc_id")
@@ -179,7 +179,7 @@ class TestBatchIngest:
         assert result["inserted"] == 2
         assert result["success_rate"] == 100
 
-    @patch('life_brain.db.ingestion.add_to_life_brain')
+    @patch('life_brain.core.ingestion.add_to_life_brain')
     def test_batch_mixed_results(self, mock_add):
         """Test batch with mixed results."""
         def add_effect(**kw):
@@ -202,7 +202,7 @@ class TestBatchIngest:
         assert result["conflicts"] == 1
         assert result["skipped"] == 1
 
-    @patch('life_brain.db.ingestion.add_to_life_brain')
+    @patch('life_brain.core.ingestion.add_to_life_brain')
     def test_batch_formats_qa_text(self, mock_add):
         """Test batch formats Q&A correctly."""
         texts = []
@@ -220,7 +220,7 @@ class TestBatchIngest:
         assert "Q: What is ML?" in texts[0]
         assert "A: Machine learning" in texts[0]
 
-    @patch('life_brain.db.ingestion.add_to_life_brain')
+    @patch('life_brain.core.ingestion.add_to_life_brain')
     def test_batch_empty(self, mock_add):
         """Test batch with no pairs."""
         result = batch_ingest(Mock(), [])
@@ -231,7 +231,7 @@ class TestBatchIngest:
 class TestValidateDocumentBatch:
     """Test validate_document_batch function."""
 
-    @patch('life_brain.db.ingestion.ChromaDBManager')
+    @patch('life_brain.core.ingestion.ChromaDBManager')
     def test_validate_all_valid(self, mock_manager_class):
         """Test validation with all valid documents."""
         mock_manager = Mock()
@@ -247,7 +247,7 @@ class TestValidateDocumentBatch:
         assert len(valid_ids) == 2
         assert len(invalid) == 0
 
-    @patch('life_brain.db.ingestion.ChromaDBManager')
+    @patch('life_brain.core.ingestion.ChromaDBManager')
     def test_validate_missing_metadata(self, mock_manager_class):
         """Test validation fails on missing metadata."""
         mock_manager = Mock()
@@ -259,7 +259,7 @@ class TestValidateDocumentBatch:
 
         assert len(invalid) == 1
 
-    @patch('life_brain.db.ingestion.ChromaDBManager')
+    @patch('life_brain.core.ingestion.ChromaDBManager')
     def test_validate_text_too_short(self, mock_manager_class):
         """Test validation fails on short text."""
         mock_manager = Mock()
@@ -270,7 +270,7 @@ class TestValidateDocumentBatch:
 
         assert len(invalid) == 1
 
-    @patch('life_brain.db.ingestion.ChromaDBManager')
+    @patch('life_brain.core.ingestion.ChromaDBManager')
     def test_validate_short_question(self, mock_manager_class):
         """Test validation fails on short question."""
         mock_manager = Mock()
@@ -282,7 +282,7 @@ class TestValidateDocumentBatch:
         assert len(invalid) == 1
         assert "question" in invalid[0][1].lower()
 
-    @patch('life_brain.db.ingestion.ChromaDBManager')
+    @patch('life_brain.core.ingestion.ChromaDBManager')
     def test_validate_short_answer(self, mock_manager_class):
         """Test validation fails on short answer."""
         mock_manager = Mock()
@@ -295,7 +295,7 @@ class TestValidateDocumentBatch:
         assert len(invalid) == 1
         assert "answer" in invalid[0][1].lower() or "too short" in invalid[0][1].lower()
 
-    @patch('life_brain.db.ingestion.ChromaDBManager')
+    @patch('life_brain.core.ingestion.ChromaDBManager')
     def test_validate_duplicate_questions(self, mock_manager_class):
         """Test validation detects duplicates."""
         mock_manager = Mock()
@@ -313,7 +313,7 @@ class TestValidateDocumentBatch:
         assert len(invalid) == 2
         assert all("duplicate" in err[1].lower() for err in invalid)
 
-    @patch('life_brain.db.ingestion.ChromaDBManager')
+    @patch('life_brain.core.ingestion.ChromaDBManager')
     def test_validate_case_insensitive_duplicates(self, mock_manager_class):
         """Test duplicate detection is case-insensitive."""
         mock_manager = Mock()
@@ -331,8 +331,8 @@ class TestValidateDocumentBatch:
 class TestIntegrationIngestion:
     """Integration tests."""
 
-    @patch('life_brain.db.ingestion.ChromaDBManager')
-    @patch('life_brain.db.ingestion.add_to_life_brain')
+    @patch('life_brain.core.ingestion.ChromaDBManager')
+    @patch('life_brain.core.ingestion.add_to_life_brain')
     def test_full_workflow_single(self, mock_add, mock_manager_class):
         """Test full single document workflow."""
         mock_add.return_value = "doc_123"
@@ -346,8 +346,8 @@ class TestIntegrationIngestion:
 
         assert doc_id == "doc_123"
 
-    @patch('life_brain.db.ingestion.ChromaDBManager')
-    @patch('life_brain.db.ingestion.add_to_life_brain')
+    @patch('life_brain.core.ingestion.ChromaDBManager')
+    @patch('life_brain.core.ingestion.add_to_life_brain')
     def test_full_workflow_batch(self, mock_add, mock_manager_class):
         """Test full batch workflow."""
         mock_add.side_effect = lambda **kw: kw.get("doc_id")

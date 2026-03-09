@@ -17,12 +17,12 @@ import time
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 
-from life_brain.truth_engine.hallucination_prevention import (
+from life_brain.truth.hallucination_prevention import (
     HallucinationPrevention,
     RuleViolation,
     ValidationResult,
 )
-from life_brain.truth_engine.groundedness import RetrievedDocument
+from life_brain.truth.groundedness import RetrievedDocument
 
 
 # ============================================================================

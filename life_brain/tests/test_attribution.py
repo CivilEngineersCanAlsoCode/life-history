@@ -15,8 +15,8 @@ Tests cover:
 
 import pytest
 
-from life_brain.search.semantic_search import SearchResult
-from life_brain.search.attribution import (
+from life_brain.retrieval.semantic_search import SearchResult
+from life_brain.retrieval.attribution import (
     AttributionFormatter,
     Citation,
     compute_confidence,

@@ -14,8 +14,8 @@ import pytest
 import time
 from typing import Dict, List, Any
 
-from life_brain.ingestion.semantic_chunking import SemanticChunker
-from life_brain.db.batch_metrics import BatchProgressTracker, BatchReporter
+from life_brain.core.semantic_chunking import SemanticChunker
+from life_brain.core.batch_metrics import BatchProgressTracker, BatchReporter
 
 
 class TestLargeBatchProcessing:

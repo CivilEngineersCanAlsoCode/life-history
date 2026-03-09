@@ -21,7 +21,7 @@ Covers:
 
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-from life_brain.db.conflict_aware_ingestion import (
+from life_brain.core.conflict_aware_ingestion import (
     ConflictType,
     ConflictScore,
     ConflictCandidate,
@@ -29,8 +29,8 @@ from life_brain.db.conflict_aware_ingestion import (
     ConflictDetector,
     ConflictAwareIngestionPipeline,
 )
-from life_brain.db.document_validator import DocumentValidator, ValidationResult
-from life_brain.db.error_reporter import ValidationError
+from life_brain.core.document_validator import DocumentValidator, ValidationResult
+from life_brain.core.error_reporter import ValidationError
 
 
 class TestConflictScore:

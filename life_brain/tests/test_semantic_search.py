@@ -12,7 +12,7 @@ Tests cover:
 import pytest
 from unittest.mock import Mock, MagicMock
 
-from life_brain.search.semantic_search import (
+from life_brain.retrieval.semantic_search import (
     SemanticSearch,
     SearchResult,
 )
@@ -413,7 +413,7 @@ class TestLargeResultSets:
     def test_top_k_1000_accepted(self):
         """Requesting top_k=1000 must not crash — collection called with that value."""
         from unittest.mock import Mock
-        from life_brain.search.semantic_search import SemanticSearch
+        from life_brain.retrieval.semantic_search import SemanticSearch
 
         mock_collection = Mock()
         # Return 1000 mock results
@@ -436,7 +436,7 @@ class TestLargeResultSets:
     def test_large_result_set_sorted_by_similarity(self):
         """1000-result set must still be sorted by similarity (highest first)."""
         from unittest.mock import Mock
-        from life_brain.search.semantic_search import SemanticSearch
+        from life_brain.retrieval.semantic_search import SemanticSearch
 
         mock_collection = Mock()
         # Return results in random order
@@ -460,7 +460,7 @@ class TestLargeResultSets:
     def test_filter_by_metadata_limit_respected(self):
         """filter_by_metadata with limit=1000 should call collection.get with that limit."""
         from unittest.mock import Mock
-        from life_brain.search.semantic_search import SemanticSearch
+        from life_brain.retrieval.semantic_search import SemanticSearch
 
         mock_collection = Mock()
         mock_collection.get.return_value = {
@@ -479,7 +479,7 @@ class TestLargeResultSets:
     def test_top_k_exceeds_collection_size_no_crash(self):
         """Requesting more results than collection size must not crash."""
         from unittest.mock import Mock
-        from life_brain.search.semantic_search import SemanticSearch
+        from life_brain.retrieval.semantic_search import SemanticSearch
 
         mock_collection = Mock()
         # Collection has only 5 docs but we request 1000
@@ -504,7 +504,7 @@ class TestPerformanceMockTests:
     def test_batch_search_100_queries_no_crash(self):
         """batch_search with 100 queries must complete without crash."""
         from unittest.mock import Mock
-        from life_brain.search.semantic_search import SemanticSearch
+        from life_brain.retrieval.semantic_search import SemanticSearch
 
         mock_collection = Mock()
         mock_collection.query.return_value = {
@@ -524,7 +524,7 @@ class TestPerformanceMockTests:
     def test_search_returns_quickly_with_small_k(self):
         """Search with top_k=5 must return in reasonable time (< 1 second with mock)."""
         from unittest.mock import Mock
-        from life_brain.search.semantic_search import SemanticSearch
+        from life_brain.retrieval.semantic_search import SemanticSearch
         import time
 
         mock_collection = Mock()
@@ -546,7 +546,7 @@ class TestPerformanceMockTests:
     def test_ingestion_batch_timeout_scenario(self):
         """Simulate batch ingestion with mock — verify timeout scenario handled."""
         from unittest.mock import Mock
-        from life_brain.db.ingestion_wrapper import ResilientIngestion
+        from life_brain.core.ingestion_wrapper import ResilientIngestion
 
         # Simulate a collection that raises on upsert (timeout scenario)
         mock_collection = Mock()

@@ -14,7 +14,7 @@ import pytest
 from datetime import datetime, timedelta
 from unittest.mock import Mock
 
-from life_brain.truth_engine.staleness_detector import (
+from life_brain.truth.staleness_detector import (
     StalenessDetector,
     StaleDocument,
     StalenessCheckResult,

@@ -12,7 +12,7 @@ Tests cover:
 import pytest
 from datetime import datetime, timedelta
 
-from life_brain.conflict.resolution_logger import (
+from life_brain.truth.resolution_logger import (
     ResolutionLog,
     ResolutionLogger,
     LogLevel,

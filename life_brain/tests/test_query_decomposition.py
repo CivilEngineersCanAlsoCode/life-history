@@ -12,7 +12,7 @@ Covers:
 """
 
 import pytest
-from life_brain.truth_engine.query_decomposition import (
+from life_brain.truth.query_decomposition import (
     QueryComplexity,
     AtomicQuery,
     DecomposedQuery,

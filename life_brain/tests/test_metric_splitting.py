@@ -11,7 +11,7 @@ Tests cover:
 
 import pytest
 
-from life_brain.validation.metric_splitting import (
+from life_brain.truth.metric_splitting import (
     MetricSplitter,
     MetricType,
     MetricValue,

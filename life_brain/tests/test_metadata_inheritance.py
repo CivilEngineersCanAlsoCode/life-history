@@ -12,7 +12,7 @@ Tests cover:
 
 import pytest
 
-from life_brain.storage.metadata_inheritance import (
+from life_brain.core.metadata_inheritance import (
     MetadataInheritanceManager,
     DocumentMetadata,
     ChunkMetadata,

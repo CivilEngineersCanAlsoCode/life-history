@@ -11,8 +11,8 @@ Tests cover:
 
 import pytest
 
-from life_brain.search.semantic_search import SearchResult
-from life_brain.search.groundedness import (
+from life_brain.retrieval.semantic_search import SearchResult
+from life_brain.retrieval.search_groundedness import (
     GroundednessScorer,
     GroundedResult,
 )
@@ -266,7 +266,7 @@ class TestOverallScoreClamping:
 
     def test_overall_score_never_exceeds_1(self):
         """overall_score must always be ≤ 1.0 regardless of inputs."""
-        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        from life_brain.truth.groundedness import GroundednessCalculator, RetrievedDocument
         calc = GroundednessCalculator()
         docs = [
             RetrievedDocument(doc_id="d1", text="great result success", metadata={}, similarity_score=1.0),
@@ -279,7 +279,7 @@ class TestOverallScoreClamping:
 
     def test_overall_score_never_below_0(self):
         """overall_score must always be ≥ 0.0."""
-        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        from life_brain.truth.groundedness import GroundednessCalculator, RetrievedDocument
         calc = GroundednessCalculator()
         docs = [
             RetrievedDocument(doc_id="d1", text="something", metadata={}, similarity_score=0.0),
@@ -293,7 +293,7 @@ class TestNegativeSimilarityEdgeCases:
 
     def test_negative_similarity_clamped_to_zero(self):
         """Documents with negative similarity score should produce overall_score >= 0."""
-        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        from life_brain.truth.groundedness import GroundednessCalculator, RetrievedDocument
         calc = GroundednessCalculator()
         docs = [RetrievedDocument(doc_id="d1", text="content", metadata={}, similarity_score=-0.5)]
         score = calc.calculate_groundedness(docs)
@@ -302,7 +302,7 @@ class TestNegativeSimilarityEdgeCases:
 
     def test_max_similarity_non_negative(self):
         """calculate_max_similarity must return >= 0 even with negative inputs."""
-        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        from life_brain.truth.groundedness import GroundednessCalculator, RetrievedDocument
         calc = GroundednessCalculator()
         docs = [
             RetrievedDocument(doc_id="d1", text="a", metadata={}, similarity_score=-0.3),
@@ -316,7 +316,7 @@ class TestEmptyQueryKeywords:
 
     def test_empty_keywords_list_no_crash(self):
         """calculate_groundedness with empty keywords list must not crash."""
-        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        from life_brain.truth.groundedness import GroundednessCalculator, RetrievedDocument
         calc = GroundednessCalculator()
         docs = [RetrievedDocument(doc_id="d1", text="some content", metadata={}, similarity_score=0.8)]
         score = calc.calculate_groundedness(docs, query_keywords=[])
@@ -324,7 +324,7 @@ class TestEmptyQueryKeywords:
 
     def test_none_keywords_no_crash(self):
         """calculate_groundedness with None keywords must not crash."""
-        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        from life_brain.truth.groundedness import GroundednessCalculator, RetrievedDocument
         calc = GroundednessCalculator()
         docs = [RetrievedDocument(doc_id="d1", text="some content", metadata={}, similarity_score=0.8)]
         score = calc.calculate_groundedness(docs, query_keywords=None)
@@ -336,7 +336,7 @@ class TestConsistencyBoundaries:
 
     def test_single_doc_consistency_is_1(self):
         """Single document is always consistent with itself → 1.0."""
-        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        from life_brain.truth.groundedness import GroundednessCalculator, RetrievedDocument
         calc = GroundednessCalculator()
         docs = [RetrievedDocument(doc_id="d1", text="success story", metadata={}, similarity_score=0.9)]
         consistency = calc.calculate_consistency(docs)
@@ -344,7 +344,7 @@ class TestConsistencyBoundaries:
 
     def test_consistency_bounded_0_to_1(self):
         """Consistency must always be in [0, 1]."""
-        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        from life_brain.truth.groundedness import GroundednessCalculator, RetrievedDocument
         calc = GroundednessCalculator()
         docs = [
             RetrievedDocument(doc_id="d1", text="yes success supported true", metadata={}, similarity_score=0.8),
@@ -359,7 +359,7 @@ class TestEmptyDocumentsList:
 
     def test_empty_docs_returns_zero_score(self):
         """calculate_groundedness with no documents should return 0.0 overall_score."""
-        from life_brain.truth_engine.groundedness import GroundednessCalculator
+        from life_brain.truth.groundedness import GroundednessCalculator
         calc = GroundednessCalculator()
         score = calc.calculate_groundedness([])
         assert score.overall_score <= 0.2  # num_docs weight gives some score even when empty
@@ -367,7 +367,7 @@ class TestEmptyDocumentsList:
 
     def test_empty_docs_no_crash(self):
         """calculate_groundedness([]) must not raise any exception."""
-        from life_brain.truth_engine.groundedness import GroundednessCalculator
+        from life_brain.truth.groundedness import GroundednessCalculator
         calc = GroundednessCalculator()
         score = calc.calculate_groundedness([], query_keywords=["test"])
         assert 0.0 <= score.overall_score <= 1.0
@@ -378,7 +378,7 @@ class TestSingleHighConfidenceDoc:
 
     def test_single_doc_perfect_similarity_high_confidence(self):
         """Single doc with 1.0 similarity should yield high overall_score."""
-        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        from life_brain.truth.groundedness import GroundednessCalculator, RetrievedDocument
         calc = GroundednessCalculator()
         docs = [RetrievedDocument(doc_id="d1", text="exact match", metadata={}, similarity_score=1.0)]
         score = calc.calculate_groundedness(docs, query_keywords=["exact", "match"])
@@ -391,7 +391,7 @@ class TestNoEmbeddingsDocuments:
 
     def test_zero_similarity_docs_no_crash(self):
         """Documents with similarity_score=0.0 (no embedding) must not crash."""
-        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        from life_brain.truth.groundedness import GroundednessCalculator, RetrievedDocument
         calc = GroundednessCalculator()
         docs = [RetrievedDocument(doc_id="d1", text="some content", metadata={}, similarity_score=0.0)]
         score = calc.calculate_groundedness(docs)
@@ -399,7 +399,7 @@ class TestNoEmbeddingsDocuments:
 
     def test_all_zero_similarity_max_is_zero(self):
         """All docs with 0 similarity → max_similarity must be 0.0."""
-        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        from life_brain.truth.groundedness import GroundednessCalculator, RetrievedDocument
         calc = GroundednessCalculator()
         docs = [
             RetrievedDocument(doc_id="d1", text="text1", metadata={}, similarity_score=0.0),
@@ -409,7 +409,7 @@ class TestNoEmbeddingsDocuments:
 
     def test_mixed_zero_and_nonzero_uses_nonzero(self):
         """Mix of 0 and non-zero similarity → max_similarity should be the non-zero value."""
-        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        from life_brain.truth.groundedness import GroundednessCalculator, RetrievedDocument
         calc = GroundednessCalculator()
         docs = [
             RetrievedDocument(doc_id="d1", text="text1", metadata={}, similarity_score=0.0),
@@ -419,7 +419,7 @@ class TestNoEmbeddingsDocuments:
 
     def test_no_embedding_score_lower_than_real_embedding(self):
         """0-similarity docs should score lower than real-embedding docs."""
-        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        from life_brain.truth.groundedness import GroundednessCalculator, RetrievedDocument
         calc = GroundednessCalculator()
         no_emb = [RetrievedDocument(doc_id="d1", text="content", metadata={}, similarity_score=0.0)]
         with_emb = [RetrievedDocument(doc_id="d2", text="content", metadata={}, similarity_score=0.8)]

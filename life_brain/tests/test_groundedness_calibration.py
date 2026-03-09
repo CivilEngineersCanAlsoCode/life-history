@@ -1,7 +1,7 @@
 """Tests for groundedness_calibration.py — score formula + threshold calibration."""
 
 import pytest
-from life_brain.truth_engine.groundedness_calibration import (
+from life_brain.truth.groundedness_calibration import (
     groundedness_score,
     score_to_level,
     threshold_measurement,

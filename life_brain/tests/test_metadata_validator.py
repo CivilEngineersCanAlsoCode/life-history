@@ -16,7 +16,7 @@ Covers:
 
 import pytest
 from datetime import datetime
-from life_brain.db.metadata_validator import MetadataValidator, MetadataValidationError
+from life_brain.core.metadata_validator import MetadataValidator, MetadataValidationError
 from life_brain.config import REQUIRED_METADATA_FIELDS
 
 

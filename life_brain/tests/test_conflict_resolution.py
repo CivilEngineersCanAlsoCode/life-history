@@ -11,7 +11,7 @@ Tests cover:
 import pytest
 from datetime import datetime
 
-from life_brain.conflict.conflict_resolution import (
+from life_brain.truth.conflict_resolution import (
     Conflict,
     ConflictPrompt,
     ConflictResolver,

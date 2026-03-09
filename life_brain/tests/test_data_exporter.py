@@ -16,7 +16,7 @@ import tempfile
 import pytest
 from unittest.mock import Mock
 
-from life_brain.db.data_exporter import DataExporter, ExportResult, ImportResult
+from life_brain.core.data_exporter import DataExporter, ExportResult, ImportResult
 
 
 def _make_mock_collection(n=3, domain="career"):

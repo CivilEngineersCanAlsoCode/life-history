@@ -12,7 +12,7 @@ Tests cover:
 
 import pytest
 
-from life_brain.ingestion.semantic_chunking import (
+from life_brain.core.semantic_chunking import (
     SemanticChunker,
     SemanticChunk,
     Paragraph,

@@ -25,17 +25,17 @@ from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 from enum import Enum
 
-from life_brain.truth_engine.groundedness import (
+from life_brain.truth.groundedness import (
     OutputGenerator,
     GroundednessScore,
     RetrievedDocument,
     OutputType,
     ConfidenceLevel,
 )
-from life_brain.truth_engine.conflict_detector import ConflictDetector, ConflictResult, ConflictType
-from life_brain.truth_engine.credibility_scorer import CredibilityScorer, CredibilityScore
-from life_brain.truth_engine.synthesis_engine import SynthesisEngine, SynthesisResult
-from life_brain.truth_engine.hallucination_prevention import HallucinationPrevention, ValidationResult, RuleViolation
+from life_brain.truth.conflict_detector import ConflictDetector, ConflictResult, ConflictType
+from life_brain.truth.credibility_scorer import CredibilityScorer, CredibilityScore
+from life_brain.truth.synthesis_engine import SynthesisEngine, SynthesisResult
+from life_brain.truth.hallucination_prevention import HallucinationPrevention, ValidationResult, RuleViolation
 
 
 # ============================================================================

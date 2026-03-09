@@ -13,8 +13,8 @@ Covers:
 
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-from life_brain.db.chromadb_init import ChromaDBManager, get_metadata_schema
-from life_brain.db.metadata_validator import MetadataValidationError
+from life_brain.core.chromadb_init import ChromaDBManager, get_metadata_schema
+from life_brain.core.metadata_validator import MetadataValidationError
 
 
 class TestChromaDBManagerInit:
@@ -41,7 +41,7 @@ class TestChromaDBManagerInit:
 class TestInitCollection:
     """Test collection initialization."""
 
-    @patch('life_brain.db.chromadb_init.chromadb.PersistentClient')
+    @patch('life_brain.core.chromadb_init.chromadb.PersistentClient')
     def test_init_collection_success(self, mock_persistent):
         """Test successful collection initialization."""
         mock_client = Mock()
@@ -56,7 +56,7 @@ class TestInitCollection:
         assert manager.client == mock_client
         assert manager.collection == mock_collection
 
-    @patch('life_brain.db.chromadb_init.chromadb.PersistentClient')
+    @patch('life_brain.core.chromadb_init.chromadb.PersistentClient')
     def test_init_collection_with_hnsw_space(self, mock_persistent):
         """Test collection initialized with HNSW space."""
         mock_client = Mock()
@@ -71,7 +71,7 @@ class TestInitCollection:
         assert "metadata" in call_kwargs
         assert "hnsw:space" in call_kwargs["metadata"]
 
-    @patch('life_brain.db.chromadb_init.chromadb.PersistentClient')
+    @patch('life_brain.core.chromadb_init.chromadb.PersistentClient')
     def test_init_collection_failure(self, mock_persistent):
         """Test collection initialization failure."""
         mock_persistent.side_effect = Exception("Connection failed")
@@ -86,7 +86,7 @@ class TestInitCollection:
 class TestValidateRequiredFields:
     """Test metadata validation delegation."""
 
-    @patch('life_brain.db.chromadb_init.MetadataValidator')
+    @patch('life_brain.core.chromadb_init.MetadataValidator')
     def test_validate_valid_metadata(self, mock_validator_class):
         """Test validation of valid metadata."""
         mock_validator = Mock()
@@ -99,7 +99,7 @@ class TestValidateRequiredFields:
         assert result is True
         mock_validator.validate_metadata.assert_called_once()
 
-    @patch('life_brain.db.chromadb_init.MetadataValidator')
+    @patch('life_brain.core.chromadb_init.MetadataValidator')
     def test_validate_invalid_metadata(self, mock_validator_class):
         """Test validation of invalid metadata."""
         mock_validator = Mock()
@@ -158,7 +158,7 @@ class TestValidateTextSelfContained:
 class TestValidateField:
     """Test single field validation."""
 
-    @patch('life_brain.db.chromadb_init.MetadataValidator')
+    @patch('life_brain.core.chromadb_init.MetadataValidator')
     def test_validate_field_valid(self, mock_validator_class):
         """Test validating valid field."""
         mock_validator = Mock()
@@ -170,7 +170,7 @@ class TestValidateField:
 
         assert result is True
 
-    @patch('life_brain.db.chromadb_init.MetadataValidator')
+    @patch('life_brain.core.chromadb_init.MetadataValidator')
     def test_validate_field_invalid(self, mock_validator_class):
         """Test validating invalid field."""
         mock_validator = Mock()
@@ -185,7 +185,7 @@ class TestValidateField:
 class TestGetSchemaInfo:
     """Test schema information retrieval."""
 
-    @patch('life_brain.db.chromadb_init.MetadataValidator')
+    @patch('life_brain.core.chromadb_init.MetadataValidator')
     def test_get_schema_info(self, mock_validator_class):
         """Test getting schema information."""
         mock_validator = Mock()
@@ -226,8 +226,8 @@ class TestGetMetadataSchema:
 class TestIntegrationChromaDB:
     """Integration tests."""
 
-    @patch('life_brain.db.chromadb_init.chromadb.PersistentClient')
-    @patch('life_brain.db.chromadb_init.MetadataValidator')
+    @patch('life_brain.core.chromadb_init.chromadb.PersistentClient')
+    @patch('life_brain.core.chromadb_init.MetadataValidator')
     def test_full_workflow_init_validate(self, mock_validator_class, mock_persistent):
         """Test full workflow: init and validate."""
         mock_validator = Mock()

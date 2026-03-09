@@ -13,7 +13,7 @@ Covers:
 import pytest
 import numpy as np
 from unittest.mock import patch, MagicMock
-from life_brain.truth_engine.conflict import (
+from life_brain.truth.conflict import (
     ConflictResult,
     calculate_semantic_similarity,
     calculate_contradiction_magnitude,

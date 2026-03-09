@@ -14,7 +14,7 @@ Tests cover:
 import pytest
 from unittest.mock import Mock
 
-from life_brain.search.semantic_search import SemanticSearch, SearchResult
+from life_brain.retrieval.semantic_search import SemanticSearch, SearchResult
 
 
 class TestSearchResultRanking:

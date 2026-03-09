@@ -11,7 +11,7 @@ Tests cover:
 
 import pytest
 
-from life_brain.db.dynamic_metadata import CustomField, DynamicMetadata
+from life_brain.core.dynamic_metadata import CustomField, DynamicMetadata
 
 
 class TestCustomField:

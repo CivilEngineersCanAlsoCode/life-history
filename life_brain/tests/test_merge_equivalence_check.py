@@ -11,7 +11,7 @@ Tests cover:
 
 import pytest
 
-from life_brain.validation.merge_equivalence_check import (
+from life_brain.truth.merge_equivalence_check import (
     MergeEquivalenceValidator,
     MergeDecision,
     DuplicateCandidate,

@@ -9,12 +9,12 @@ Tests cover:
 """
 
 import pytest
-from life_brain.emotional.sentiment_detector import (
+from life_brain.conversation.sentiment_detector import (
     SentimentDetector,
     ExpertSuggestion,
     MoodAnalysis,
 )
-from life_brain.emotional.trend_detector import SessionMoodPattern, TrendDirection
+from life_brain.conversation.trend_detector import SessionMoodPattern, TrendDirection
 from life_brain.session.preferences import ExpertDomain
 
 
@@ -53,7 +53,7 @@ class TestMoodAnalysis:
 
     def test_create_analysis(self):
         """Test creating mood analysis."""
-        from life_brain.emotional.sentiment_analyzer import SentimentScore, Sentiment
+        from life_brain.conversation.sentiment_analyzer import SentimentScore, Sentiment
 
         sentiment = SentimentScore(
             text="I'm so happy!",

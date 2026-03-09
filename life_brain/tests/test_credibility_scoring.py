@@ -16,12 +16,12 @@ import pytest
 from datetime import datetime
 from pathlib import Path
 
-from life_brain.truth_engine.credibility_scorer import (
+from life_brain.truth.credibility_scorer import (
     CredibilityScorer,
     CredibilityScore,
     REFERENCE_DATE,
 )
-from life_brain.truth_engine.groundedness import RetrievedDocument
+from life_brain.truth.groundedness import RetrievedDocument
 
 
 # ============================================================================

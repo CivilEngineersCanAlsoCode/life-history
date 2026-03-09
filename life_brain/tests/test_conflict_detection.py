@@ -14,12 +14,12 @@ import time
 from pathlib import Path
 from typing import List, Dict, Any
 
-from life_brain.truth_engine.conflict_detector import (
+from life_brain.truth.conflict_detector import (
     ConflictDetector,
     ConflictResult,
     ConflictType,
 )
-from life_brain.truth_engine.groundedness import RetrievedDocument
+from life_brain.truth.groundedness import RetrievedDocument
 
 
 # ============================================================================

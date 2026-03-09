@@ -13,13 +13,13 @@ import pytest
 import time
 from unittest.mock import Mock, MagicMock
 
-from life_brain.db.batch_ingest_resilient import (
+from life_brain.core.batch_ingest_resilient import (
     BatchIngestResilient,
     IngestResult,
     BatchIngestResult,
     classify_error,
 )
-from life_brain.db.retry_manager import FailureReason, RetryPolicy
+from life_brain.core.retry_manager import FailureReason, RetryPolicy
 
 
 class TestErrorClassification:

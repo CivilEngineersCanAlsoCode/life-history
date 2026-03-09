@@ -12,8 +12,8 @@ Tests cover:
 import pytest
 from typing import List, Dict, Any
 
-from life_brain.intent.detector import IntentDetector, IntentMatch
-from life_brain.intent.mode_gate import (
+from life_brain.conversation.intent_detector import IntentDetector, IntentMatch
+from life_brain.conversation.intent_mode_gate import (
     format_mode_buttons,
     handle_mode_selection,
     ModeState,

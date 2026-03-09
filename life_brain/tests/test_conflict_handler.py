@@ -12,9 +12,9 @@ Covers:
 """
 
 import pytest
-from life_brain.truth_engine.conflict import ConflictResult
-from life_brain.truth_engine.resolution_workflow import ConflictResolutionResult
-from life_brain.truth_engine.conflict_handler import ConflictHandler
+from life_brain.truth.conflict import ConflictResult
+from life_brain.truth.resolution_workflow import ConflictResolutionResult
+from life_brain.truth.conflict_handler import ConflictHandler
 
 
 class TestConflictHandlerInit:
@@ -30,7 +30,7 @@ class TestConflictHandlerInit:
         """Test that handler has workflow attribute."""
         handler = ConflictHandler()
         assert hasattr(handler, "workflow")
-        from life_brain.truth_engine.resolution_workflow import ConflictResolutionWorkflow
+        from life_brain.truth.resolution_workflow import ConflictResolutionWorkflow
         assert isinstance(handler.workflow, ConflictResolutionWorkflow)
 
 
