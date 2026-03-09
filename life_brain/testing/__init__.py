@@ -1,51 +1,69 @@
 """
-Testing framework for Life Brain — unit test templates, mocking utilities, and helpers.
+Performance testing module — load tests, latency tests, and benchmarking.
 
-This module provides:
-- Base test classes with common setup/teardown
-- Mock fixtures for ChromaDB, LLM, and external services
-- Assertion helpers for common patterns
-- Test data generators
+Provides:
+- Batch ingestion load testing (1K, 10K, 100K documents)
+- Semantic search latency validation
+- Concurrent operation stress tests
+- Memory profiling
 """
 
-from life_brain.testing.base_test import (
-    BaseLifeBrainTest,
-    BaseIntegrationTest,
+from life_brain.testing.load_testing import (
+    BatchIngestionLoadTest,
+    DocumentGenerator,
+    LoadTestConfig,
+    LoadTestResult,
+    LoadTestSuite,
+    run_throughput_test,
 )
-from life_brain.testing.fixtures import (
-    mock_chroma_collection,
-    mock_retrieved_document,
-    mock_metadata_dict,
-    sample_documents,
+from life_brain.testing.latency_testing import (
+    QueryType,
+    QueryLibrary,
+    LatencyBoundary,
+    LatencyMeasurement,
+    LatencyTestResult,
+    SemanticSearchLatencyTest,
 )
-from life_brain.testing.mocks import (
-    MockChromaDB,
-    MockEmbedding,
-    MockLLM,
-    MockSession,
+from life_brain.testing.concurrent_testing import (
+    MemorySnapshot,
+    MemoryMonitor,
+    ConcurrentIngestionTest,
+    ConcurrentTestResult,
 )
-from life_brain.testing.assertions import (
-    assert_valid_document,
-    assert_valid_metadata,
-    assert_similarity_in_range,
+from life_brain.testing.resilience_testing import (
+    ErrorCategory,
+    RetryAttempt,
+    DeadletterEntry,
+    ResilienceTestResult,
+    RetryPolicy,
+    ResilienceTest,
 )
 
 __all__ = [
-    # Base test classes
-    "BaseLifeBrainTest",
-    "BaseIntegrationTest",
-    # Fixtures
-    "mock_chroma_collection",
-    "mock_retrieved_document",
-    "mock_metadata_dict",
-    "sample_documents",
-    # Mocks
-    "MockChromaDB",
-    "MockEmbedding",
-    "MockLLM",
-    "MockSession",
-    # Assertions
-    "assert_valid_document",
-    "assert_valid_metadata",
-    "assert_similarity_in_range",
+    # Load testing
+    "BatchIngestionLoadTest",
+    "DocumentGenerator",
+    "LoadTestConfig",
+    "LoadTestResult",
+    "LoadTestSuite",
+    "run_throughput_test",
+    # Latency testing
+    "QueryType",
+    "QueryLibrary",
+    "LatencyBoundary",
+    "LatencyMeasurement",
+    "LatencyTestResult",
+    "SemanticSearchLatencyTest",
+    # Concurrent testing
+    "MemorySnapshot",
+    "MemoryMonitor",
+    "ConcurrentIngestionTest",
+    "ConcurrentTestResult",
+    # Resilience testing
+    "ErrorCategory",
+    "RetryAttempt",
+    "DeadletterEntry",
+    "ResilienceTestResult",
+    "RetryPolicy",
+    "ResilienceTest",
 ]

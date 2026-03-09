@@ -9,7 +9,7 @@ Provides:
 """
 
 from typing import Dict, Any, List, Optional
-from life_brain.truth_engine.groundedness import RetrievedDocument
+from life_brain.truth.groundedness import RetrievedDocument
 
 
 def assert_valid_document(doc: Dict[str, Any], strict: bool = True) -> bool:

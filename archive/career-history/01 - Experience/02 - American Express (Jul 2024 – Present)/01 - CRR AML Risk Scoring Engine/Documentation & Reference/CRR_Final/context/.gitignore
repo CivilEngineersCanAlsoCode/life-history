@@ -1,0 +1,29 @@
+# Environment and Credentials
+.env
+credentials.json
+token.json
+
+# Temporary/Intermediate files
+.tmp/
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+.venv/
+ENV/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log

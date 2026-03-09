@@ -54,7 +54,7 @@ def mock_retrieved_document(
     metadata: Optional[Dict] = None,
 ):
     """Generate a mock retrieved document."""
-    from life_brain.truth_engine.groundedness import RetrievedDocument
+    from life_brain.truth.groundedness import RetrievedDocument
 
     if doc_id is None:
         doc_id = f"doc_{''.join(random.choices(string.ascii_lowercase, k=6))}"
