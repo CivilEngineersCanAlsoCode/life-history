@@ -695,3 +695,86 @@ class TestStaleSessionHandling:
         awareness = context.context_awareness
         # 1 day → "1 day ago" contains "day" → NEXT_DAY
         assert awareness["resumption_context"] == ResumptionContext.NEXT_DAY.value
+
+
+class TestVeryOldSessionHandling:
+    """Regression tests for issues-7rs: session resume when >30 days old — should warn user."""
+
+    def test_30_day_old_session_resume_no_crash(self):
+        """Prior session 32 days old must not crash — returns valid context."""
+        schema = SessionStateSchema()
+        resumer = SessionResumer(schema)
+
+        schema.session_state_schema("old_30d_sess", "user_999")
+        prior_state = schema.get_state("old_30d_sess")
+
+        schema.add_turn(
+            "old_30d_sess",
+            user_message="old message",
+            assistant_response="old response",
+            sentiment="neutral",
+            polarity=0.0,
+            emotions={},
+        )
+        thirty_days_ago = (datetime.now() - timedelta(days=32)).isoformat()
+        prior_state.history[0].timestamp = thirty_days_ago
+        prior_state.context.last_activity = thirty_days_ago
+
+        context, error = resumer.session_resume("new_after_30d", prior_session_id="old_30d_sess")
+        assert error is None
+        assert context is not None
+
+    def test_30_day_old_session_classified_as_week_later(self):
+        """32-day-old session → gap '4 week(s) ago' → contains 'week' → WEEK_LATER context."""
+        schema = SessionStateSchema()
+        resumer = SessionResumer(schema)
+
+        schema.session_state_schema("very_old_sess", "user_888")
+        prior_state = schema.get_state("very_old_sess")
+
+        schema.add_turn(
+            "very_old_sess",
+            user_message="test",
+            assistant_response="resp",
+            sentiment="neutral",
+            polarity=0.0,
+            emotions={},
+        )
+        thirty_two_days_ago = (datetime.now() - timedelta(days=32)).isoformat()
+        prior_state.history[0].timestamp = thirty_two_days_ago
+        prior_state.context.last_activity = thirty_two_days_ago
+
+        context, error = resumer.session_resume(
+            "resume_from_32d", prior_session_id="very_old_sess"
+        )
+        assert error is None
+        awareness = context.context_awareness
+        # 32 days → "4 week(s) ago" → contains "week" → WEEK_LATER
+        assert awareness["resumption_context"] == ResumptionContext.WEEK_LATER.value
+
+    def test_very_old_session_has_prior_context_summary(self):
+        """Very old session resume must still provide prior context summary."""
+        schema = SessionStateSchema()
+        resumer = SessionResumer(schema)
+
+        schema.session_state_schema("ancient_sess", "user_777")
+        prior_state = schema.get_state("ancient_sess")
+
+        schema.add_turn(
+            "ancient_sess",
+            user_message="I want to improve my career",
+            assistant_response="Let's discuss it.",
+            sentiment="positive",
+            polarity=0.5,
+            emotions={"excited": 0.7},
+        )
+        very_old = (datetime.now() - timedelta(days=60)).isoformat()
+        prior_state.history[0].timestamp = very_old
+        prior_state.context.last_activity = very_old
+
+        context, error = resumer.session_resume(
+            "new_after_60d", prior_session_id="ancient_sess"
+        )
+        assert error is None
+        # Prior context should exist (not None) since prior session had history
+        assert context.prior_context is not None

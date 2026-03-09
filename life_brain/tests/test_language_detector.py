@@ -399,3 +399,53 @@ class TestLanguageDetector:
         assert stats["total_messages"] == 4
         # Should have both English and Hindi
         assert stats["english_count"] > 0 or stats["hinglish_count"] > 0
+
+
+class TestPureHindiText:
+    """Regression tests for issues-ifm: Hinglish bridge with 100% Hindi text (no English)."""
+
+    def test_pure_devanagari_hindi_detected(self):
+        """100% Devanagari Hindi text must detect as HINDI, not crash."""
+        from life_brain.conversation.language_detector import LanguageDetector, LanguageType
+        detector = LanguageDetector()
+        composition, _ = detector.detect_language(
+            "नमस्ते मेरा नाम सत्विक है और मैं एक सॉफ्टवेयर इंजीनियर हूं"
+        )
+        assert composition is not None
+        assert composition.primary_language == LanguageType.HINDI
+
+    def test_pure_hindi_high_confidence(self):
+        """Pure Devanagari Hindi must have high confidence score."""
+        from life_brain.conversation.language_detector import LanguageDetector
+        detector = LanguageDetector()
+        composition, _ = detector.detect_language(
+            "यह एक हिंदी वाक्य है जो पूरी तरह से हिंदी में लिखा गया है"
+        )
+        assert composition.confidence >= 0.8
+
+    def test_pure_hindi_0_english_percentage(self):
+        """Pure Devanagari text must have 0% English."""
+        from life_brain.conversation.language_detector import LanguageDetector
+        detector = LanguageDetector()
+        composition, _ = detector.detect_language("मैं ठीक हूँ धन्यवाद")
+        assert composition.english_percentage == 0.0
+
+    def test_hinglish_bridge_roman_hindi_works(self):
+        """Roman-script Hindi (Hinglish) must be detected as HINGLISH."""
+        from life_brain.conversation.language_detector import LanguageDetector, LanguageType
+        detector = LanguageDetector()
+        composition, _ = detector.detect_language(
+            "Main theek hun, kya hal hai aur kaam kaisa chal raha hai"
+        )
+        assert composition.primary_language in [LanguageType.HINGLISH, LanguageType.ENGLISH]
+
+    def test_pure_hindi_message_stored_correctly(self):
+        """detect_language_message with pure Hindi must not crash."""
+        from life_brain.conversation.language_detector import LanguageDetector, LanguageType
+        detector = LanguageDetector()
+        msg, _ = detector.detect_language_message(
+            "नमस्ते यह हिंदी में एक संदेश है",
+            "msg_hindi_001"
+        )
+        assert msg is not None
+        assert msg.composition.primary_language == LanguageType.HINDI

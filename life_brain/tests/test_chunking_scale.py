@@ -392,3 +392,87 @@ Next steps and recommendations for ongoing work."""
 
         # All tests pass - workflow is complete
         assert len(all_chunks) > 0
+
+
+class TestExtremelyLongDocument:
+    """Regression tests for issues-dqv: chunking on 100K token document."""
+
+    def test_100k_token_document_chunks_correctly(self):
+        """100K token document with paragraph breaks should split into many chunks."""
+        para = "This is a sentence about career experience at Google in machine learning. "
+        # ~100K tokens ≈ 400K chars, with paragraph breaks every ~20 sentences
+        long_doc = ("\n\n" + para * 20) * 200
+        meta = {"company": "Google", "domain": "career"}
+
+        chunker = SemanticChunker()
+        chunks, error = chunker.chunk_document("long_doc_001", long_doc, meta)
+
+        assert error is None
+        assert len(chunks) > 50  # Should produce many chunks
+        # Each chunk should be within token limits
+        for chunk in chunks:
+            assert chunk.token_count <= SemanticChunker.MAX_TOKENS + 50  # small buffer
+
+    def test_100k_token_all_chunks_have_doc_id(self):
+        """Every chunk from a large document must reference the parent doc."""
+        para = "Career achievement at Amazon involving distributed systems. "
+        long_doc = ("\n\n" + para * 15) * 100
+        meta = {"company": "Amazon", "domain": "career"}
+
+        chunker = SemanticChunker()
+        chunks, error = chunker.chunk_document("large_doc_x", long_doc, meta)
+
+        assert error is None
+        for chunk in chunks:
+            assert chunk.document_id == "large_doc_x"
+
+    def test_large_document_metadata_preserved(self):
+        """Metadata must be preserved in all chunks of a large document."""
+        para = "Work experience and technical skills at Microsoft. "
+        long_doc = ("\n\n" + para * 10) * 50
+        meta = {"company": "Microsoft", "domain": "career", "project": "Azure"}
+
+        chunker = SemanticChunker()
+        chunks, error = chunker.chunk_document("large_meta_doc", long_doc, meta)
+
+        assert error is None
+        assert len(chunks) > 0
+        for chunk in chunks:
+            assert chunk.metadata.get("company") == "Microsoft"
+
+
+class TestNoParagraphBreakDocument:
+    """Regression tests for issues-31v: document with no paragraph breaks."""
+
+    def test_short_no_break_doc_returns_single_chunk(self):
+        """Short document without paragraph breaks should return exactly 1 chunk."""
+        chunker = SemanticChunker()
+        meta = {"company": "TestCo", "domain": "career"}
+        short = "This is a short document with no paragraph breaks whatsoever."
+        chunks, error = chunker.chunk_document("short_nobr", short, meta)
+        assert error is None
+        # Should not split into multiple chunks — single paragraph
+        assert len(chunks) == 1
+
+    def test_no_break_doc_under_50_tokens_not_discarded(self):
+        """Document under 50 tokens should still return at least 1 chunk, not 0."""
+        chunker = SemanticChunker()
+        meta = {"company": "TestCo", "domain": "career"}
+        # ~40 characters ≈ 10 tokens — well under min_tokens=50
+        tiny = "Short career note."
+        chunks, error = chunker.chunk_document("tiny_doc", tiny, meta)
+        assert error is None
+        assert len(chunks) >= 1  # Must not be discarded
+
+    def test_single_long_paragraph_stays_within_max_tokens(self):
+        """A single very long paragraph (no breaks) should produce chunks within max_tokens."""
+        chunker = SemanticChunker()
+        meta = {"company": "TestCo", "domain": "career"}
+        # Single paragraph 2000 chars ≈ 500 tokens
+        long_single = "This is a long run-on sentence about my career experience at Google involving machine learning and distributed systems projects. " * 15
+        chunks, error = chunker.chunk_document("long_single_para", long_single, meta)
+        assert error is None
+        assert len(chunks) >= 1
+        # All chunks should be at or under max limit
+        for chunk in chunks:
+            assert chunk.token_count <= SemanticChunker.MAX_TOKENS + 50
