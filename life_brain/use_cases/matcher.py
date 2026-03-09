@@ -188,3 +188,39 @@ class UseCaseMatcher:
         for uc in self.catalog.get_all():
             difficulties.add(uc.difficulty_level)
         return sorted(list(difficulties))
+
+    def find_with_catalog_fallback(
+        self,
+        user_input: str,
+        limit: int = 10,
+        min_score: float = 0.3,
+    ) -> Tuple[List[MatchResult], bool]:
+        """
+        Find matches with full-catalog fallback when 0 results.
+
+        Returns:
+            (matches, used_fallback) tuple.
+            If matches are found: (matches, False)
+            If 0 matches: (all catalog items with default score, True)
+        """
+        matches = self.find_top_matches(user_input, limit=limit, min_score=min_score)
+        if matches:
+            return matches, False
+
+        # Fallback: return all use cases ordered by difficulty
+        all_use_cases = self.catalog.get_all()
+        difficulty_order = {"beginner": 0, "intermediate": 1, "advanced": 2}
+        sorted_uc = sorted(
+            all_use_cases,
+            key=lambda uc: difficulty_order.get(uc.difficulty_level, 9)
+        )
+        fallback_matches = [
+            MatchResult(
+                use_case=uc,
+                match_score=0.0,
+                match_type="fallback",
+                confidence=0.0,
+            )
+            for uc in sorted_uc
+        ]
+        return fallback_matches, True

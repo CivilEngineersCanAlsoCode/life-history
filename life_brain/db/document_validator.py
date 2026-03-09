@@ -63,6 +63,8 @@ class DocumentValidator:
             Tuple of (is_valid, error_list)
         """
         errors = []
+        if metadata is None:
+            metadata = {}
         missing_fields = [f for f in REQUIRED_METADATA_FIELDS if f not in metadata]
 
         if missing_fields:

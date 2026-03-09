@@ -384,3 +384,45 @@ class TestSingleHighConfidenceDoc:
         score = calc.calculate_groundedness(docs, query_keywords=["exact", "match"])
         assert score.overall_score > 0.5  # Should be reasonably high
         assert score.max_similarity == 1.0
+
+
+class TestNoEmbeddingsDocuments:
+    """Regression tests for issues-bd7.1.13: documents with no embeddings (similarity_score=0)."""
+
+    def test_zero_similarity_docs_no_crash(self):
+        """Documents with similarity_score=0.0 (no embedding) must not crash."""
+        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        calc = GroundednessCalculator()
+        docs = [RetrievedDocument(doc_id="d1", text="some content", metadata={}, similarity_score=0.0)]
+        score = calc.calculate_groundedness(docs)
+        assert 0.0 <= score.overall_score <= 1.0
+
+    def test_all_zero_similarity_max_is_zero(self):
+        """All docs with 0 similarity → max_similarity must be 0.0."""
+        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        calc = GroundednessCalculator()
+        docs = [
+            RetrievedDocument(doc_id="d1", text="text1", metadata={}, similarity_score=0.0),
+            RetrievedDocument(doc_id="d2", text="text2", metadata={}, similarity_score=0.0),
+        ]
+        assert calc.calculate_max_similarity(docs) == 0.0
+
+    def test_mixed_zero_and_nonzero_uses_nonzero(self):
+        """Mix of 0 and non-zero similarity → max_similarity should be the non-zero value."""
+        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        calc = GroundednessCalculator()
+        docs = [
+            RetrievedDocument(doc_id="d1", text="text1", metadata={}, similarity_score=0.0),
+            RetrievedDocument(doc_id="d2", text="text2", metadata={}, similarity_score=0.75),
+        ]
+        assert calc.calculate_max_similarity(docs) == 0.75
+
+    def test_no_embedding_score_lower_than_real_embedding(self):
+        """0-similarity docs should score lower than real-embedding docs."""
+        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        calc = GroundednessCalculator()
+        no_emb = [RetrievedDocument(doc_id="d1", text="content", metadata={}, similarity_score=0.0)]
+        with_emb = [RetrievedDocument(doc_id="d2", text="content", metadata={}, similarity_score=0.8)]
+        score_no = calc.calculate_groundedness(no_emb)
+        score_with = calc.calculate_groundedness(with_emb)
+        assert score_with.overall_score > score_no.overall_score

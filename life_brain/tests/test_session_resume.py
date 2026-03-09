@@ -533,3 +533,165 @@ class TestSessionResumer:
 
         assert context1.expert_domain == "career"
         assert context2.expert_domain == "product"
+
+
+class TestZeroPriorSessions:
+    """Regression tests for issues-ly2.14.6: session init when user has 0 prior sessions."""
+
+    def test_resume_with_no_prior_session_succeeds(self):
+        """session_resume with no prior_session_id must return valid context, not crash."""
+        schema = SessionStateSchema()
+        resumer = SessionResumer(schema)
+        context, error = resumer.session_resume("brand_new_session")
+        assert error is None
+        assert context is not None
+        assert context.expert_domain == "career"
+
+    def test_new_session_has_new_session_resumption_context(self):
+        """First-time session should have NEW_SESSION resumption context."""
+        schema = SessionStateSchema()
+        resumer = SessionResumer(schema)
+        context, _ = resumer.session_resume("first_session")
+        awareness = context.context_awareness
+        assert awareness["resumption_context"] == ResumptionContext.NEW_SESSION.value
+
+    def test_new_session_has_no_prior_context(self):
+        """First session must have None prior_context (no prior summary)."""
+        schema = SessionStateSchema()
+        resumer = SessionResumer(schema)
+        context, _ = resumer.session_resume("first_session_x")
+        assert context.prior_context is None
+
+    def test_new_session_has_entry_point(self):
+        """Even without prior sessions, entry point suggestion must be returned."""
+        schema = SessionStateSchema()
+        resumer = SessionResumer(schema)
+        context, _ = resumer.session_resume("fresh_session_001")
+        assert context.suggested_entry_point is not None
+        assert len(context.suggested_entry_point) > 0
+
+
+class TestCorruptedSessionFile:
+    """Regression tests for issues-ly2.14.7: corrupted/unreadable session context file."""
+
+    def test_resume_with_invalid_prior_session_id(self):
+        """Resuming with a prior_session_id that doesn't exist returns error gracefully."""
+        schema = SessionStateSchema()
+        resumer = SessionResumer(schema)
+        context, error = resumer.session_resume(
+            "new_session_001",
+            prior_session_id="nonexistent_session_abc"
+        )
+        assert context is None
+        assert error is not None
+        assert "not found" in error.lower() or "nonexistent_session_abc" in error
+
+    def test_state_schema_get_missing_session_returns_none(self):
+        """get_state() for unknown session ID must return None, not raise."""
+        schema = SessionStateSchema()
+        result = schema.get_state("missing_session_id_xyz")
+        assert result is None
+
+    def test_resume_after_state_cleared_graceful(self):
+        """Resuming after states cleared should not crash."""
+        schema = SessionStateSchema()
+        resumer = SessionResumer(schema)
+        # Create and then clear
+        schema.session_state_schema("temp_session", "user_001")
+        schema.states.clear()
+        # Now try to resume it
+        context, error = resumer.session_resume(
+            "new_session_z",
+            prior_session_id="temp_session"
+        )
+        assert context is None
+        assert error is not None
+
+
+class TestStaleSessionHandling:
+    """Regression tests for issues-ly2.14.9: session resume when prior data is >7 days old."""
+
+    def test_week_old_session_resume_no_crash(self):
+        """Prior session 10 days old must not crash — returns valid context."""
+        schema = SessionStateSchema()
+        resumer = SessionResumer(schema)
+
+        schema.session_state_schema("old_sess_10d", "user_001")
+        prior_state = schema.get_state("old_sess_10d")
+
+        schema.add_turn(
+            "old_sess_10d",
+            user_message="test",
+            assistant_response="response",
+            sentiment="neutral",
+            polarity=0.0,
+            emotions={},
+        )
+        ten_days_ago = (datetime.now() - timedelta(days=10)).isoformat()
+        prior_state.history[0].timestamp = ten_days_ago
+        prior_state.context.last_activity = ten_days_ago
+
+        context, error = resumer.session_resume(
+            "resume_10d",
+            prior_session_id="old_sess_10d"
+        )
+        assert error is None
+        assert context is not None
+
+    def test_week_old_session_classified_as_week_later(self):
+        """Prior session 7+ days old → gap string contains 'week' → WEEK_LATER context."""
+        schema = SessionStateSchema()
+        resumer = SessionResumer(schema)
+
+        schema.session_state_schema("week_old_sess", "user_002")
+        prior_state = schema.get_state("week_old_sess")
+
+        schema.add_turn(
+            "week_old_sess",
+            user_message="test",
+            assistant_response="response",
+            sentiment="neutral",
+            polarity=0.0,
+            emotions={},
+        )
+        eight_days_ago = (datetime.now() - timedelta(days=8)).isoformat()
+        prior_state.history[0].timestamp = eight_days_ago
+        prior_state.context.last_activity = eight_days_ago
+
+        context, error = resumer.session_resume(
+            "resume_8d",
+            prior_session_id="week_old_sess"
+        )
+        assert error is None
+        awareness = context.context_awareness
+        # 8 days → "1 week(s) ago" → contains "week" → WEEK_LATER
+        assert awareness["resumption_context"] == ResumptionContext.WEEK_LATER.value
+
+    def test_1_day_old_session_classified_as_next_day(self):
+        """Prior session 1 day old → gap string "1 day ago" → NEXT_DAY context."""
+        schema = SessionStateSchema()
+        resumer = SessionResumer(schema)
+
+        schema.session_state_schema("day_old_sess", "user_003")
+        prior_state = schema.get_state("day_old_sess")
+
+        schema.add_turn(
+            "day_old_sess",
+            user_message="test",
+            assistant_response="response",
+            sentiment="neutral",
+            polarity=0.0,
+            emotions={},
+        )
+        one_day_ago = (datetime.now() - timedelta(days=1, hours=2)).isoformat()
+        prior_state.history[0].timestamp = one_day_ago
+        prior_state.context.last_activity = one_day_ago
+
+        context, error = resumer.session_resume(
+            "next_day_sess",
+            prior_session_id="day_old_sess"
+        )
+        assert error is None
+        awareness = context.context_awareness
+        # 1 day → "1 day ago" contains "day" → NEXT_DAY
+        assert awareness["resumption_context"] == ResumptionContext.NEXT_DAY.value

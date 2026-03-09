@@ -544,3 +544,219 @@ class TestConfidenceBoundaryValues:
         errors = validator.validate_field_values(metadata)
         confidence_errors = [e for e in errors if e.field == "confidence"]
         assert len(confidence_errors) == 0
+
+
+class TestNullRequiredFieldsHandling:
+    """Regression tests for issues-6vx.1.13: null metadata in validate_required_fields."""
+
+    def test_none_metadata_does_not_crash(self):
+        """validate_required_fields(None) must not raise TypeError."""
+        from life_brain.db.document_validator import DocumentValidator
+        valid, errors = DocumentValidator.validate_required_fields(None)
+        assert valid is False
+        assert len(errors) > 0
+
+    def test_empty_metadata_returns_errors(self):
+        """Empty dict returns errors for all required fields."""
+        from life_brain.db.document_validator import DocumentValidator
+        valid, errors = DocumentValidator.validate_required_fields({})
+        assert valid is False
+        assert len(errors) > 0
+
+    def test_missing_single_field_caught(self):
+        """Single missing required field returns exactly one error."""
+        from life_brain.config import REQUIRED_METADATA_FIELDS
+        from life_brain.db.document_validator import DocumentValidator
+        # Build metadata with all required fields except first one
+        meta = {f: "x" for f in REQUIRED_METADATA_FIELDS}
+        removed = REQUIRED_METADATA_FIELDS[0]
+        del meta[removed]
+        valid, errors = DocumentValidator.validate_required_fields(meta)
+        assert valid is False
+        assert any(e.field == removed for e in errors)
+
+
+class TestMixedTypeFieldValidation:
+    """Regression tests for issues-6vx.1.14: mixed type field validation."""
+
+    def test_int_for_str_field_raises_type_error(self):
+        """Integer value for 'domain' (str field) must produce type error."""
+        from life_brain.db.document_validator import DocumentValidator
+        errors = DocumentValidator.validate_field_types({"domain": 123})
+        assert any(e.field == "domain" for e in errors)
+
+    def test_float_for_int_field_raises_type_error(self):
+        """Float value for 'importance' (int field) must produce type error."""
+        from life_brain.db.document_validator import DocumentValidator
+        errors = DocumentValidator.validate_field_types({"importance": 3.5})
+        assert any(e.field == "importance" for e in errors)
+
+    def test_valid_float_for_confidence_accepted(self):
+        """Float for 'confidence' (int|float) must not raise type error."""
+        from life_brain.db.document_validator import DocumentValidator
+        errors = DocumentValidator.validate_field_types({"confidence": 0.85})
+        conf_errors = [e for e in errors if e.field == "confidence"]
+        assert len(conf_errors) == 0
+
+    def test_string_list_for_tags_accepted(self):
+        """List value for 'tags' field must not raise type error."""
+        from life_brain.db.document_validator import DocumentValidator
+        errors = DocumentValidator.validate_field_types({"tags": ["career", "interview"]})
+        tag_errors = [e for e in errors if e.field == "tags"]
+        assert len(tag_errors) == 0
+
+
+class TestUnicodeTextValidation:
+    """Regression tests for issues-6vx.1.15: Unicode/special characters in text."""
+
+    def test_arabic_text_no_crash(self):
+        """Arabic text must not crash validate_text_content."""
+        from life_brain.db.document_validator import DocumentValidator
+        text = "مرحبا كيف حالك اليوم هذا نص طويل بما يكفي" * 3
+        valid, error = DocumentValidator.validate_text_content(text)
+        assert isinstance(valid, bool)
+
+    def test_emoji_rich_text_no_crash(self):
+        """Text with many emojis must not crash."""
+        from life_brain.db.document_validator import DocumentValidator
+        text = "🚀 " * 30 + " This is a valid document with emoji content for career purposes."
+        valid, error = DocumentValidator.validate_text_content(text)
+        assert isinstance(valid, bool)
+
+    def test_mixed_script_text_no_crash(self):
+        """Mixed Hindi-English text must not crash."""
+        from life_brain.db.document_validator import DocumentValidator
+        text = ("Mera naam Satvik hai aur main ek software engineer hun. "
+                "मैं Google में काम करता हूं। I have 5 years of experience. ") * 3
+        valid, error = DocumentValidator.validate_text_content(text)
+        assert isinstance(valid, bool)
+
+    def test_null_bytes_in_text_no_crash(self):
+        """Text with null bytes must not crash."""
+        from life_brain.db.document_validator import DocumentValidator
+        text = "Normal text\x00with null bytes" * 5
+        valid, error = DocumentValidator.validate_text_content(text)
+        assert isinstance(valid, bool)
+
+
+class TestEnumValidationDomains:
+    """Regression tests for issues-6vx.1.16: enum validation against valid_domains list."""
+
+    def test_all_valid_domains_accepted(self):
+        """All valid domains from validate_field_values must pass without errors."""
+        from life_brain.db.document_validator import DocumentValidator
+        valid_domains = ["career", "relationships", "health", "finance", "personal_growth", "memory"]
+        for domain in valid_domains:
+            errors = DocumentValidator.validate_field_values({"domain": domain})
+            domain_errors = [e for e in errors if e.field == "domain"]
+            assert len(domain_errors) == 0, f"Domain '{domain}' should be valid"
+
+    def test_invalid_domain_rejected(self):
+        """Unknown domain must produce enum error."""
+        from life_brain.db.document_validator import DocumentValidator
+        errors = DocumentValidator.validate_field_values({"domain": "food"})
+        assert any(e.field == "domain" for e in errors)
+
+    def test_empty_string_domain_rejected(self):
+        """Empty string domain must produce enum error."""
+        from life_brain.db.document_validator import DocumentValidator
+        errors = DocumentValidator.validate_field_values({"domain": ""})
+        assert any(e.field == "domain" for e in errors)
+
+    def test_case_sensitive_domain(self):
+        """Domain matching is case-sensitive — 'Career' is not valid."""
+        from life_brain.db.document_validator import DocumentValidator
+        errors = DocumentValidator.validate_field_values({"domain": "Career"})
+        assert any(e.field == "domain" for e in errors)
+
+
+class TestVeryLongQuestionRejection:
+    """Regression tests for issues-6vx.1.17: very long question (5000+ chars)."""
+
+    def test_5000_char_question_rejected(self):
+        """Question with 5000 characters must be rejected (max is 500)."""
+        from life_brain.db.document_validator import DocumentValidator
+        long_question = "x" * 5000
+        valid_answer = "A" * 100
+        valid, errors = DocumentValidator.validate_question_answer(long_question, valid_answer)
+        assert valid is False
+        assert any(e.field == "question" for e in errors)
+
+    def test_501_char_question_rejected(self):
+        """Question just over limit (501 chars) must be rejected."""
+        from life_brain.db.document_validator import DocumentValidator
+        question = "q" * 501
+        answer = "a" * 50
+        valid, errors = DocumentValidator.validate_question_answer(question, answer)
+        assert valid is False
+
+    def test_500_char_question_accepted(self):
+        """Question at exact limit (500 chars) must be accepted."""
+        from life_brain.db.document_validator import DocumentValidator
+        question = "q" * 500
+        answer = "a" * 50
+        valid, errors = DocumentValidator.validate_question_answer(question, answer)
+        q_errors = [e for e in errors if e.field == "question" and "long" in e.message.lower()]
+        assert len(q_errors) == 0
+
+
+class TestPrivacyComplianceNullFields:
+    """Regression tests for issues-6vx.1.19: privacy compliance when metadata fields are null."""
+
+    def test_null_privacy_field_no_crash(self):
+        """metadata with privacy=None must not crash."""
+        from life_brain.db.document_validator import DocumentValidator
+        valid, errors = DocumentValidator.validate_privacy_compliance({"privacy": None})
+        assert isinstance(valid, bool)
+
+    def test_missing_privacy_field_defaults_to_private(self):
+        """Missing privacy field defaults to private — no errors."""
+        from life_brain.db.document_validator import DocumentValidator
+        valid, errors = DocumentValidator.validate_privacy_compliance({})
+        assert valid is True
+
+    def test_null_sensitive_field_no_false_positive(self):
+        """Null value for sensitive field should not trigger privacy warning."""
+        from life_brain.db.document_validator import DocumentValidator
+        meta = {"privacy": "public", "personal_data": None}
+        valid, errors = DocumentValidator.validate_privacy_compliance(meta)
+        # None sensitive field should NOT trigger warning (falsy check)
+        assert valid is True
+
+    def test_public_with_real_sensitive_data_warns(self):
+        """Public doc with actual sensitive data must produce warning."""
+        from life_brain.db.document_validator import DocumentValidator
+        meta = {"privacy": "public", "personal_data": "SSN: 123-45-6789"}
+        valid, errors = DocumentValidator.validate_privacy_compliance(meta)
+        assert valid is False
+        assert len(errors) > 0
+
+
+class TestEmptyAnswerNullPointer:
+    """Regression tests for issues-6vx.1.7: null pointer on empty/None answer in Q&A pair."""
+
+    def test_none_answer_no_crash(self):
+        """validate_question_answer with None answer must not crash."""
+        from life_brain.db.document_validator import DocumentValidator
+        valid, errors = DocumentValidator.validate_question_answer("Valid question?", None)
+        assert valid is False
+        assert any(e.field == "answer" for e in errors)
+
+    def test_empty_string_answer_no_crash(self):
+        """Empty string answer must not crash."""
+        from life_brain.db.document_validator import DocumentValidator
+        valid, errors = DocumentValidator.validate_question_answer("Valid question?", "")
+        assert valid is False
+
+    def test_none_question_no_crash(self):
+        """None question must not crash."""
+        from life_brain.db.document_validator import DocumentValidator
+        valid, errors = DocumentValidator.validate_question_answer(None, "Valid long answer here.")
+        assert valid is False
+        assert any(e.field == "question" for e in errors)
+
+    def test_both_none_no_crash(self):
+        """Both None must not crash."""
+        from life_brain.db.document_validator import DocumentValidator
+        valid, errors = DocumentValidator.validate_question_answer(None, None)
+        assert valid is False

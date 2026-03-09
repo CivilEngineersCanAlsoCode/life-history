@@ -350,3 +350,57 @@ class TestUseCaseIntegration:
         assert "C4" in detail_output
         assert "Negotiation" in detail_output
         assert "Chris" in detail_output
+
+
+class TestZeroMatchesFallback:
+    """Regression tests for issues-ly2.2.5: use case catalog 0 matches → show full list fallback."""
+
+    def test_zero_matches_gibberish_query(self):
+        """Nonsense query with high min_score should return 0 matches."""
+        from life_brain.use_cases.matcher import UseCaseMatcher
+        matcher = UseCaseMatcher()
+        matches = matcher.find_top_matches("xyzabc123", min_score=0.99)
+        assert len(matches) == 0
+
+    def test_find_with_catalog_fallback_returns_all_on_zero(self):
+        """find_with_catalog_fallback should return all use cases when no matches."""
+        from life_brain.use_cases.matcher import UseCaseMatcher
+        matcher = UseCaseMatcher()
+        results, used_fallback = matcher.find_with_catalog_fallback("xyzabc123", min_score=0.99)
+        assert used_fallback is True
+        assert len(results) > 0  # Full catalog returned
+
+    def test_find_with_catalog_fallback_no_fallback_on_match(self):
+        """find_with_catalog_fallback should NOT use fallback when matches exist."""
+        from life_brain.use_cases.matcher import UseCaseMatcher
+        matcher = UseCaseMatcher()
+        results, used_fallback = matcher.find_with_catalog_fallback("interview preparation")
+        assert used_fallback is False
+        assert len(results) > 0
+
+    def test_fallback_results_cover_all_categories(self):
+        """Fallback results should include all categories."""
+        from life_brain.use_cases.matcher import UseCaseMatcher
+        from life_brain.use_cases.catalog import UseCaseCatalog
+        matcher = UseCaseMatcher()
+        results, used_fallback = matcher.find_with_catalog_fallback("xyzabc123", min_score=0.99)
+        catalog = UseCaseCatalog()
+        total_catalog = len(catalog.get_all())
+        assert len(results) == total_catalog
+
+    def test_fallback_ordered_by_difficulty(self):
+        """Fallback results should be ordered beginner first."""
+        from life_brain.use_cases.matcher import UseCaseMatcher
+        matcher = UseCaseMatcher()
+        results, used_fallback = matcher.find_with_catalog_fallback("xyzabc123", min_score=0.99)
+        if used_fallback and len(results) > 1:
+            # First result should be beginner
+            assert results[0].use_case.difficulty_level == "beginner"
+
+    def test_format_empty_matches_has_fallback_message(self):
+        """format_top_matches([]) should direct user to browse by category."""
+        from life_brain.use_cases.ui import UseCaseUI
+        output = UseCaseUI.format_top_matches([])
+        assert "No matching" in output or "no matching" in output.lower()
+        # Should suggest next action
+        assert len(output) > 0
