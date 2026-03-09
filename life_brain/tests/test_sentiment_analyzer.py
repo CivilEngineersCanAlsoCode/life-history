@@ -1,7 +1,7 @@
 """Test suite for sentiment analyzer."""
 
 import pytest
-from life_brain.emotional.sentiment_analyzer import (
+from life_brain.conversation.sentiment_analyzer import (
     SentimentAnalyzer,
     SentimentScore,
     Sentiment,

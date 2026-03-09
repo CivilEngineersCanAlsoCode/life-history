@@ -11,7 +11,7 @@ Tests cover:
 
 import pytest
 
-from life_brain.validation.nugget_identification import (
+from life_brain.truth.nugget_identification import (
     NuggetIdentifier,
     NuggetType,
     SubjectPredicatePair,

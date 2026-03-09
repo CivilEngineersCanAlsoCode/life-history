@@ -1,7 +1,7 @@
 """Test suite for trend detector."""
 
 import pytest
-from life_brain.emotional.trend_detector import (
+from life_brain.conversation.trend_detector import (
     TrendDetector,
     SessionSentiment,
     TrendDirection,

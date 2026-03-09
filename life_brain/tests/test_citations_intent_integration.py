@@ -16,7 +16,7 @@ import sys
 sys.path.insert(0, '.')
 
 from typing import List, Dict, Any
-from life_brain.truth_engine.groundedness import (
+from life_brain.truth.groundedness import (
     GroundednessScore,
     GroundednessCalculator,
     RetrievedDocument,

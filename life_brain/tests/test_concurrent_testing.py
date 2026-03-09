@@ -12,7 +12,7 @@ import pytest
 from unittest.mock import Mock, patch
 import time
 
-from life_brain.performance.concurrent_testing import (
+from life_brain.testing.concurrent_testing import (
     MemorySnapshot,
     MemoryMonitor,
     ConcurrentIngestionTest,

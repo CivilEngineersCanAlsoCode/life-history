@@ -13,7 +13,7 @@ Tests cover:
 
 import pytest
 
-from life_brain.truth_engine.conflict_ui import (
+from life_brain.truth.conflict_ui import (
     ConflictPrompt,
     format_hard_conflict_prompt,
     format_soft_conflict_prompt,

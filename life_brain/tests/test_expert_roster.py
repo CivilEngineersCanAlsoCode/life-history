@@ -10,13 +10,13 @@ Covers:
 """
 
 import pytest
-from life_brain.experts.roster import (
+from life_brain.conversation.expert_roster import (
     ExpertRoster,
     Expert,
     ExpertDomain,
     SignatureStory,
 )
-from life_brain.experts.context_manager import (
+from life_brain.conversation.expert_context_manager import (
     ExpertContextManager,
     ExpertContext,
 )

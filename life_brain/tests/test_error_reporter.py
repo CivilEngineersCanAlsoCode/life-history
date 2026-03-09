@@ -9,7 +9,7 @@ Covers:
 """
 
 import pytest
-from life_brain.db.error_reporter import ValidationError, ErrorReporter
+from life_brain.core.error_reporter import ValidationError, ErrorReporter
 
 
 class TestValidationError:

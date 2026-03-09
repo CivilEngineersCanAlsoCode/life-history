@@ -12,7 +12,7 @@ Tests cover:
 
 import pytest
 
-from life_brain.storage.qa_storage import (
+from life_brain.core.qa_storage import (
     QAStorage,
     QAPair,
     ContextMetadata,

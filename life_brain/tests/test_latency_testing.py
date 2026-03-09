@@ -12,7 +12,7 @@ import pytest
 from unittest.mock import Mock, patch
 import time
 
-from life_brain.performance.latency_testing import (
+from life_brain.testing.latency_testing import (
     QueryType,
     QueryLibrary,
     LatencyBoundary,

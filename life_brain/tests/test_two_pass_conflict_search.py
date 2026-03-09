@@ -13,7 +13,7 @@ Tests cover:
 import pytest
 from unittest.mock import Mock, call
 
-from life_brain.truth_engine.two_pass_conflict_search import (
+from life_brain.truth.two_pass_conflict_search import (
     two_pass_conflict_search,
     should_run_structural_pass,
     STRUCTURAL_CONFLICT_TYPES,

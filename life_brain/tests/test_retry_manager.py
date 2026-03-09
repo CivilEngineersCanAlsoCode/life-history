@@ -15,7 +15,7 @@ import tempfile
 import json
 from pathlib import Path
 from datetime import datetime, timedelta
-from life_brain.db.retry_manager import (
+from life_brain.core.retry_manager import (
     RetryPolicy,
     FailedIngestion,
     DeadletterQueue,

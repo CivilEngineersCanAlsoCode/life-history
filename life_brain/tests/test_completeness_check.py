@@ -12,7 +12,7 @@ Tests cover:
 
 import pytest
 
-from life_brain.validation.completeness_check import (
+from life_brain.truth.completeness_check import (
     CompletenessValidator,
     CompletenessCheck,
     MissingComponent,

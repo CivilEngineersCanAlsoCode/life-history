@@ -18,7 +18,7 @@ import time
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any
 
-from life_brain.truth_engine.synthesis_engine import SynthesisEngine, SynthesisResult
+from life_brain.truth.synthesis_engine import SynthesisEngine, SynthesisResult
 
 
 # ============================================================================

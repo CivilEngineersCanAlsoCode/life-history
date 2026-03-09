@@ -3,7 +3,7 @@
 import math
 import pytest
 
-from life_brain.db.mece_validator import (
+from life_brain.core.mece_validator import (
     AtomicQuery,
     DuplicateCandidate,
     MECEReport,

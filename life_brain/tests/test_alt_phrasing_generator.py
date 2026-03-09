@@ -11,7 +11,7 @@ Tests cover:
 
 import pytest
 
-from life_brain.db.alt_phrasing_generator import (
+from life_brain.core.alt_phrasing_generator import (
     generate_alt_phrasings,
     generate_phrasings_for_fact,
 )

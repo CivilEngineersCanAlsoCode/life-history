@@ -18,7 +18,7 @@ from life_brain.conversation.panel_router import (
     ExpertResponse,
     PanelRole,
 )
-from life_brain.experts.roster import ExpertRoster
+from life_brain.conversation.expert_roster import ExpertRoster
 
 
 class TestExpertResponse:

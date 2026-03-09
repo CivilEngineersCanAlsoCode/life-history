@@ -12,7 +12,7 @@ Tests cover:
 import pytest
 from unittest.mock import Mock
 
-from life_brain.search.query_interface import (
+from life_brain.retrieval.query_interface import (
     QueryParser,
     SearchQueryInterface,
     QueryResult,

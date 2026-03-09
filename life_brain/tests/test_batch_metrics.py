@@ -11,7 +11,7 @@ Covers:
 import pytest
 from datetime import datetime, timedelta
 from time import sleep
-from life_brain.db.batch_metrics import (
+from life_brain.core.batch_metrics import (
     BatchOperation,
     BatchMetrics,
     BatchProgressTracker,

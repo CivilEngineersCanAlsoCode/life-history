@@ -11,7 +11,7 @@ Coverage:
 
 import pytest
 from typing import List
-from life_brain.truth_engine.groundedness import (
+from life_brain.truth.groundedness import (
     GroundednessScore,
     GroundednessCalculator,
     OutputGenerator,

@@ -12,7 +12,7 @@ Tests cover:
 import pytest
 from datetime import datetime, timedelta
 
-from life_brain.db.schema_monitor import (
+from life_brain.core.schema_monitor import (
     FieldCandidate,
     SchemaMonitor,
     PromotionStatus,

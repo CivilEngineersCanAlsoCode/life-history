@@ -1,7 +1,7 @@
 """Tests for structural_ce.py — NLP-based CE validation."""
 
 import pytest
-from life_brain.pipelines.structural_ce import (
+from life_brain.retrieval.structural_ce import (
     structural_ce_check,
     extract_atoms,
     _extract_numbers,
@@ -186,7 +186,7 @@ class TestCoverageNeverExceeds1:
         # Compute coverage manually to confirm cap
         atoms = set()
         for key in ["numbers", "entities", "key_verbs"]:
-            from life_brain.pipelines.structural_ce import extract_atoms
+            from life_brain.retrieval.structural_ce import extract_atoms
             atoms |= extract_atoms(raw)[key]
         covered = len(atoms) - len([a for a in atoms if a.lower() not in raw.lower()])
         coverage = covered / len(atoms) if atoms else 1.0

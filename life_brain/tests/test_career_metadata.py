@@ -10,7 +10,7 @@ Tests cover:
 
 import pytest
 
-from life_brain.db.career_metadata import (
+from life_brain.core.career_metadata import (
     CareerMetadata,
     CareerMetadataManager,
 )

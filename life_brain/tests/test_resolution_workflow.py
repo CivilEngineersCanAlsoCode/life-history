@@ -14,7 +14,7 @@ Covers:
 
 import pytest
 from datetime import datetime
-from life_brain.truth_engine.resolution_workflow import (
+from life_brain.truth.resolution_workflow import (
     ConflictResolutionResult,
     ConflictResolutionWorkflow,
 )

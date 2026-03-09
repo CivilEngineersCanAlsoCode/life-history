@@ -12,7 +12,7 @@ Tests cover:
 import pytest
 import time
 
-from life_brain.ingestion.semantic_chunking import SemanticChunker
+from life_brain.core.semantic_chunking import SemanticChunker
 
 
 class TestChunkingScale:

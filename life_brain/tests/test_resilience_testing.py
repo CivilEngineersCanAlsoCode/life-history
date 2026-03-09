@@ -11,7 +11,7 @@ Tests cover:
 import pytest
 from unittest.mock import Mock, MagicMock
 
-from life_brain.performance.resilience_testing import (
+from life_brain.testing.resilience_testing import (
     ErrorCategory,
     RetryAttempt,
     DeadletterEntry,

@@ -17,10 +17,10 @@ import pytest
 from unittest.mock import Mock
 
 from life_brain.conversation.consensus_resolver import ConsensusResolver
-from life_brain.truth_engine.two_pass_conflict_search import two_pass_conflict_search
+from life_brain.truth.two_pass_conflict_search import two_pass_conflict_search
 from life_brain.conversation.conversational_framing import ConversationalFramer
-from life_brain.truth_engine.staleness_detector import StalenessDetector
-from life_brain.db.data_exporter import DataExporter
+from life_brain.truth.staleness_detector import StalenessDetector
+from life_brain.core.data_exporter import DataExporter
 
 
 # ---------- Helpers ----------

@@ -12,7 +12,7 @@ Tests cover:
 import pytest
 from datetime import datetime, timedelta
 
-from life_brain.db.audit_trail import AuditEntry, AuditTrail
+from life_brain.core.audit_trail import AuditEntry, AuditTrail
 
 
 class TestAuditEntry:

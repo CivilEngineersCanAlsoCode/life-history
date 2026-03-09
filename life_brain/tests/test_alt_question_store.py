@@ -15,7 +15,7 @@ Tests cover:
 import pytest
 from unittest.mock import Mock
 
-from life_brain.db.alt_question_store import (
+from life_brain.core.alt_question_store import (
     AltQuestionStore,
     AltQuestionDocument,
     generate_alt_question_id,
