@@ -12,9 +12,7 @@ venv/
 
 # Personal data & dev artifacts (kept locally, not tracked)
 archive/
-context/KNOWLEDGE-INDEX.md
-context/interview-prep/
-context/templates/metrics-tracking.md
+context/
 
 # Agent dev workflows (only sync-life.md is user-facing)
 .agents/workflows/sync-beads.md
