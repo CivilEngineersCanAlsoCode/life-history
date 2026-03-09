@@ -286,3 +286,69 @@ class TestOverallScoreClamping:
         ]
         score = calc.calculate_groundedness(docs, query_keywords=["unrelated"])
         assert score.overall_score >= 0.0
+
+
+class TestNegativeSimilarityEdgeCases:
+    """Regression tests for issues-bd7.4.11: negative similarity should not propagate."""
+
+    def test_negative_similarity_clamped_to_zero(self):
+        """Documents with negative similarity score should produce overall_score >= 0."""
+        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        calc = GroundednessCalculator()
+        docs = [RetrievedDocument(doc_id="d1", text="content", metadata={}, similarity_score=-0.5)]
+        score = calc.calculate_groundedness(docs)
+        assert score.overall_score >= 0.0
+        assert score.max_similarity >= 0.0
+
+    def test_max_similarity_non_negative(self):
+        """calculate_max_similarity must return >= 0 even with negative inputs."""
+        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        calc = GroundednessCalculator()
+        docs = [
+            RetrievedDocument(doc_id="d1", text="a", metadata={}, similarity_score=-0.3),
+            RetrievedDocument(doc_id="d2", text="b", metadata={}, similarity_score=-0.1),
+        ]
+        assert calc.calculate_max_similarity(docs) >= 0.0
+
+
+class TestEmptyQueryKeywords:
+    """Regression tests for issues-bd7.4.10: empty query_keywords list."""
+
+    def test_empty_keywords_list_no_crash(self):
+        """calculate_groundedness with empty keywords list must not crash."""
+        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        calc = GroundednessCalculator()
+        docs = [RetrievedDocument(doc_id="d1", text="some content", metadata={}, similarity_score=0.8)]
+        score = calc.calculate_groundedness(docs, query_keywords=[])
+        assert 0.0 <= score.overall_score <= 1.0
+
+    def test_none_keywords_no_crash(self):
+        """calculate_groundedness with None keywords must not crash."""
+        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        calc = GroundednessCalculator()
+        docs = [RetrievedDocument(doc_id="d1", text="some content", metadata={}, similarity_score=0.8)]
+        score = calc.calculate_groundedness(docs, query_keywords=None)
+        assert 0.0 <= score.overall_score <= 1.0
+
+
+class TestConsistencyBoundaries:
+    """Regression tests for issues-bd7.4.12: consistency at boundary conditions."""
+
+    def test_single_doc_consistency_is_1(self):
+        """Single document is always consistent with itself → 1.0."""
+        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        calc = GroundednessCalculator()
+        docs = [RetrievedDocument(doc_id="d1", text="success story", metadata={}, similarity_score=0.9)]
+        consistency = calc.calculate_consistency(docs)
+        assert consistency == 1.0
+
+    def test_consistency_bounded_0_to_1(self):
+        """Consistency must always be in [0, 1]."""
+        from life_brain.truth_engine.groundedness import GroundednessCalculator, RetrievedDocument
+        calc = GroundednessCalculator()
+        docs = [
+            RetrievedDocument(doc_id="d1", text="yes success supported true", metadata={}, similarity_score=0.8),
+            RetrievedDocument(doc_id="d2", text="no failure rejected false", metadata={}, similarity_score=0.7),
+        ]
+        consistency = calc.calculate_consistency(docs)
+        assert 0.0 <= consistency <= 1.0

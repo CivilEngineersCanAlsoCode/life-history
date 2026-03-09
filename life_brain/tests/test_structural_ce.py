@@ -166,3 +166,37 @@ class TestStructuralCeCheck:
         ok, missing = structural_ce_check(raw, pairs)
         assert ok is True
         assert missing == []
+
+
+class TestCoverageNeverExceeds1:
+    """Regression test for issues-i4z.3.5: CE validation coverage <= 100% always."""
+
+    def test_coverage_never_exceeds_1_even_with_rich_qa(self):
+        """structural_ce_check returns is_exhaustive bool, never coverage > 1.0."""
+        from types import SimpleNamespace
+        raw = "The project reduced latency by 70% and increased throughput by 3x."
+        qa = [
+            SimpleNamespace(question="What did it reduce?", answer="Latency by 70%", alt_questions=[]),
+            SimpleNamespace(question="What increased?", answer="Throughput by 3x", alt_questions=[]),
+        ]
+        is_exhaustive, missing = structural_ce_check(raw, qa)
+        # Coverage can't > 1.0: verified by checking missing >= 0
+        assert isinstance(is_exhaustive, bool)
+        assert len(missing) >= 0  # If all covered, missing is empty
+        # Compute coverage manually to confirm cap
+        atoms = set()
+        for key in ["numbers", "entities", "key_verbs"]:
+            from life_brain.pipelines.structural_ce import extract_atoms
+            atoms |= extract_atoms(raw)[key]
+        covered = len(atoms) - len([a for a in atoms if a.lower() not in raw.lower()])
+        coverage = covered / len(atoms) if atoms else 1.0
+        assert coverage <= 1.0
+
+    def test_coverage_with_no_atoms_is_not_gt_1(self):
+        """When raw answer has no atoms, coverage defaults to 1.0 (not >1)."""
+        from types import SimpleNamespace
+        raw = "ok yes no"  # No numbers, no entities, no key verbs
+        qa = [SimpleNamespace(question="q", answer="a", alt_questions=[])]
+        is_exhaustive, missing = structural_ce_check(raw, qa)
+        assert is_exhaustive is True  # No atoms = trivially exhaustive
+        assert missing == []

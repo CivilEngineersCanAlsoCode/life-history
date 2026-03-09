@@ -380,3 +380,26 @@ class TestNuggetIdentifier:
             # (though not always due to context)
             assert 0.0 <= nugget.subject_predicate.confidence <= 1.0
             assert 0.0 <= nugget.importance_score <= 1.0
+
+
+class TestNoKeywordsEdgeCase:
+    """Regression test for issues-i4z.2.8: no extractable keywords in answer."""
+
+    def test_no_keywords_returns_empty_no_crash(self):
+        """Answer with no extractable keywords must return empty result, not crash."""
+        identifier = NuggetIdentifier()
+        nuggets, error = identifier.identify_nuggets("a b c d e")
+        assert error is None or isinstance(error, str)
+        assert isinstance(nuggets, list)
+
+    def test_stopword_only_answer(self):
+        """Answer with only stopwords/common words should not crash."""
+        identifier = NuggetIdentifier()
+        nuggets, _ = identifier.identify_nuggets("the and is in of to")
+        assert isinstance(nuggets, list)
+
+    def test_single_word_answer_handled(self):
+        """Single word answer must not crash."""
+        identifier = NuggetIdentifier()
+        nuggets, _ = identifier.identify_nuggets("Yes")
+        assert isinstance(nuggets, list)

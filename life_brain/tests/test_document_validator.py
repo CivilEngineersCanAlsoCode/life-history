@@ -491,3 +491,20 @@ class TestNullQAValidation:
         valid, errors = DocumentValidator.validate_question_answer(q, a)
         assert valid is True
         assert len(errors) == 0
+
+
+class TestShortQuestionRejection:
+    """Regression test for issues-i4z.2.7: question shorter than min_length rejected gracefully."""
+
+    def test_two_char_question_rejected(self):
+        """2-character question must produce validation error, not crash."""
+        from life_brain.db.document_validator import DocumentValidator
+        valid, errors = DocumentValidator.validate_question_answer("Hi", "A long enough answer that contains meaningful content about the topic being discussed")
+        assert valid is False
+        assert any(e.field == "question" for e in errors)
+
+    def test_single_char_question_rejected(self):
+        """Single character question must be rejected."""
+        from life_brain.db.document_validator import DocumentValidator
+        valid, errors = DocumentValidator.validate_question_answer("?", "Sufficient answer text here")
+        assert valid is False

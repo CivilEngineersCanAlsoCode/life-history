@@ -378,3 +378,30 @@ class TestSemanticSearch:
         exported = [r.to_dict() for r in results]
         assert all("doc_id" in e for e in exported)
         assert all("similarity_score" in e for e in exported)
+
+
+class TestNullEmbeddingHandling:
+    """Regression test for issues-2p4: null document embedding error."""
+
+    def test_search_with_null_embedding_query(self):
+        """Searching with None query_embedding and empty query must return error."""
+        mock_collection = Mock()
+        search = SemanticSearch(collection=mock_collection)
+        results, error = search.search("", query_embedding=None)
+        assert len(results) == 0
+        assert error is not None
+
+    def test_search_with_valid_embedding_bypasses_text_query(self):
+        """Non-null embedding should allow empty text query."""
+        mock_collection = Mock()
+        mock_collection.query.return_value = {
+            "ids": [["doc1"]],
+            "documents": [["Some content"]],
+            "distances": [[0.2]],
+            "metadatas": [[{}]],
+        }
+        search = SemanticSearch(collection=mock_collection)
+        # Empty text but valid embedding → should work
+        results, error = search.search("", query_embedding=[0.1, 0.2, 0.3])
+        assert error is None
+        assert len(results) == 1

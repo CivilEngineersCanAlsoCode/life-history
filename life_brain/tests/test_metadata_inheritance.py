@@ -462,3 +462,36 @@ class TestNullParentDocIdBug:
         assert error is None
         assert chunk is not None
         assert chunk.company == "Acme"
+
+
+class TestOrphanedChunkHandling:
+    """Regression test for issues-5jf: child chunk references deleted parent doc."""
+
+    def test_create_chunk_with_unregistered_parent_returns_error(self):
+        """Creating chunk for unregistered (or deleted) parent returns error, not crash."""
+        manager = MetadataInheritanceManager()
+        # Never register "doc_deleted" — simulates deleted parent
+        chunk, error = manager.create_chunk("doc_deleted", "some text", sequence=0)
+        assert chunk is None
+        assert error is not None
+        assert "doc_deleted" in error or "not found" in error.lower()
+
+    def test_chunks_remain_accessible_after_parent_conceptually_deleted(self):
+        """Chunks stored before parent removal should still be retrievable by chunk_id."""
+        manager = MetadataInheritanceManager()
+        manager.register_document("doc1", "Doc1", company="Acme")
+        manager.create_chunk("doc1", "chunk content", sequence=0)
+        # Simulate deletion by removing from parent_documents
+        del manager.parent_documents["doc1"]
+        # Chunk still accessible by ID from chunk_history
+        all_chunks = manager.chunk_history
+        assert len(all_chunks) == 1
+
+    def test_new_chunks_for_deleted_parent_blocked(self):
+        """After parent is removed, new chunks cannot be created for it."""
+        manager = MetadataInheritanceManager()
+        manager.register_document("doc1", "Doc1")
+        del manager.parent_documents["doc1"]
+        chunk, error = manager.create_chunk("doc1", "new chunk", sequence=1)
+        assert chunk is None
+        assert error is not None

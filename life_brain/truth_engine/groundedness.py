@@ -110,14 +110,14 @@ class GroundednessCalculator:
         """Get max similarity from retrieved documents."""
         if not documents:
             return 0.0
-        return max(doc.similarity_score for doc in documents)
+        return max(0.0, max(doc.similarity_score for doc in documents))
 
     def calculate_avg_similarity(self, documents: List[RetrievedDocument]) -> float:
         """Get average similarity across relevant documents."""
         relevant = [d for d in documents if d.similarity_score >= self.query_threshold]
         if not relevant:
             return 0.0
-        return sum(d.similarity_score for d in relevant) / len(relevant)
+        return max(0.0, sum(d.similarity_score for d in relevant) / len(relevant))
 
     def count_supporting_documents(self, documents: List[RetrievedDocument]) -> int:
         """Count documents that support the query (above threshold)."""
