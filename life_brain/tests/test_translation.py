@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
-from life_brain.extraction.translation import (
+from life_brain.retrieval.translation import (
     TranslationLayer,
     get_translator,
     HINGLISH_TO_ENGLISH_PROMPT,
@@ -23,7 +23,7 @@ def make_mock_response(text: str):
 
 @pytest.fixture
 def mock_client():
-    with patch("life_brain.extraction.translation.Anthropic") as MockAnthropic:
+    with patch("life_brain.retrieval.translation.Anthropic") as MockAnthropic:
         client = MagicMock()
         MockAnthropic.return_value = client
         yield client
@@ -150,8 +150,8 @@ class TestPromptTemplates:
 
 class TestGetTranslator:
     def test_singleton(self):
-        with patch("life_brain.extraction.translation.Anthropic"):
-            import life_brain.extraction.translation as mod
+        with patch("life_brain.retrieval.translation.Anthropic"):
+            import life_brain.retrieval.translation as mod
             # Reset singleton
             mod._translator = None
             t1 = get_translator()
@@ -161,8 +161,8 @@ class TestGetTranslator:
             mod._translator = None
 
     def test_returns_translation_layer(self):
-        with patch("life_brain.extraction.translation.Anthropic"):
-            import life_brain.extraction.translation as mod
+        with patch("life_brain.retrieval.translation.Anthropic"):
+            import life_brain.retrieval.translation as mod
             mod._translator = None
             t = get_translator()
             assert isinstance(t, TranslationLayer)

@@ -19,8 +19,8 @@ Covers:
 import pytest
 from unittest.mock import Mock, MagicMock, patch
 from datetime import datetime, timedelta
-from life_brain.db.ingestion_wrapper import ResilientIngestion
-from life_brain.db.retry_manager import (
+from life_brain.core.ingestion_wrapper import ResilientIngestion
+from life_brain.core.retry_manager import (
     RetryPolicy,
     RetryQueue,
     DeadletterQueue,
@@ -73,7 +73,7 @@ class TestResilientIngestionInit:
 class TestIngestWithRetrySuccess:
     """Test successful ingestion on first try."""
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
     def test_ingest_success_first_try(self, mock_add):
         """Test successful ingestion returns success status."""
         mock_add.return_value = "doc_123"
@@ -96,8 +96,8 @@ class TestIngestWithRetrySuccess:
 class TestIngestWithRetryTransient:
     """Test transient error handling."""
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
-    @patch('life_brain.db.ingestion_wrapper.categorize_error')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.categorize_error')
     def test_ingest_transient_error_schedules_retry(self, mock_categorize, mock_add):
         """Test transient error schedules retry."""
         mock_add.side_effect = ConnectionError("Connection failed")
@@ -116,8 +116,8 @@ class TestIngestWithRetryTransient:
         assert result["retry_count"] == 1
         assert "retry" in result["message"].lower()
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
-    @patch('life_brain.db.ingestion_wrapper.categorize_error')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.categorize_error')
     def test_ingest_transient_adds_to_retry_queue(self, mock_categorize, mock_add):
         """Test transient error adds document to retry queue."""
         mock_add.side_effect = TimeoutError("Timeout")
@@ -141,8 +141,8 @@ class TestIngestWithRetryTransient:
 class TestIngestWithRetryValidation:
     """Test validation error handling."""
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
-    @patch('life_brain.db.ingestion_wrapper.categorize_error')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.categorize_error')
     def test_ingest_validation_error_to_deadletter(self, mock_categorize, mock_add):
         """Test validation error goes to deadletter."""
         mock_add.side_effect = ValueError("Invalid metadata")
@@ -165,8 +165,8 @@ class TestIngestWithRetryValidation:
 class TestIngestWithRetryConflict:
     """Test conflict error handling."""
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
-    @patch('life_brain.db.ingestion_wrapper.categorize_error')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.categorize_error')
     def test_ingest_conflict_error_to_deadletter(self, mock_categorize, mock_add):
         """Test conflict error goes to deadletter."""
         mock_add.side_effect = RuntimeError("Hard conflict detected")
@@ -188,8 +188,8 @@ class TestIngestWithRetryConflict:
 class TestIngestWithRetryUnknown:
     """Test unknown error handling."""
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
-    @patch('life_brain.db.ingestion_wrapper.categorize_error')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.categorize_error')
     def test_ingest_unknown_error_schedules_retry(self, mock_categorize, mock_add):
         """Test unknown error schedules retry."""
         mock_add.side_effect = Exception("Unknown error")
@@ -210,7 +210,7 @@ class TestIngestWithRetryUnknown:
 class TestProcessRetryQueue:
     """Test retry queue processing."""
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
     def test_process_empty_retry_queue(self, mock_add):
         """Test processing empty retry queue."""
         mock_collection = Mock()
@@ -223,8 +223,8 @@ class TestProcessRetryQueue:
         assert result["failed_again"] == 0
         assert result["still_waiting"] == 0
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
-    @patch('life_brain.db.ingestion_wrapper.categorize_error')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.categorize_error')
     def test_process_retry_queue_with_ready_documents(self, mock_categorize, mock_add):
         """Test processing retry queue with ready documents."""
         # Setup: first call fails, subsequent calls succeed
@@ -262,7 +262,7 @@ class TestProcessRetryQueue:
 class TestBatchIngestResilient:
     """Test batch resilient ingestion."""
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
     def test_batch_ingest_all_success(self, mock_add):
         """Test batch ingestion with all successes."""
         mock_add.side_effect = lambda doc_id, **kwargs: doc_id
@@ -282,8 +282,8 @@ class TestBatchIngestResilient:
         assert result["retry_scheduled"] == 0
         assert result["deadlettered"] == 0
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
-    @patch('life_brain.db.ingestion_wrapper.categorize_error')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.categorize_error')
     def test_batch_ingest_mixed_results(self, mock_categorize, mock_add):
         """Test batch ingestion with mixed results."""
         # First doc succeeds, second fails transiently, third fails validation
@@ -317,7 +317,7 @@ class TestBatchIngestResilient:
         assert result["inserted_first_try"] == 1
         # Note: retry_scheduled and deadlettered counts depend on categorization
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
     def test_batch_ingest_formats_qa_correctly(self, mock_add):
         """Test batch ingestion formats Q&A pairs correctly."""
         captured_texts = []
@@ -344,7 +344,7 @@ class TestBatchIngestResilient:
 class TestMetricsTracking:
     """Test metrics tracking."""
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
     def test_metrics_track_success(self, mock_add):
         """Test metrics track successful ingestion."""
         mock_add.return_value = "doc_123"
@@ -361,7 +361,7 @@ class TestMetricsTracking:
         assert metrics is not None
         assert "ingestion" in metrics
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
     def test_get_metrics_includes_all_components(self, mock_add):
         """Test metrics include ingestion, retry queue, and deadletter."""
         mock_add.return_value = "doc_123"
@@ -384,8 +384,8 @@ class TestMetricsTracking:
 class TestDeadletterManagement:
     """Test deadletter queue management."""
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
-    @patch('life_brain.db.ingestion_wrapper.categorize_error')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.categorize_error')
     def test_get_deadletters_empty(self, mock_categorize, mock_add):
         """Test getting deadletters when empty."""
         mock_collection = Mock()
@@ -396,8 +396,8 @@ class TestDeadletterManagement:
         assert isinstance(deadletters, list)
         assert len(deadletters) == 0
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
-    @patch('life_brain.db.ingestion_wrapper.categorize_error')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.categorize_error')
     def test_get_deadletters_with_entries(self, mock_categorize, mock_add):
         """Test getting deadletter entries."""
         mock_add.side_effect = ValueError("Invalid")
@@ -418,8 +418,8 @@ class TestDeadletterManagement:
         assert len(deadletters) > 0
         assert any(d["doc_id"] == "bad_doc" for d in deadletters)
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
-    @patch('life_brain.db.ingestion_wrapper.categorize_error')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.categorize_error')
     def test_get_deadletters_filter_by_reason(self, mock_categorize, mock_add):
         """Test filtering deadletters by reason."""
         mock_add.side_effect = ValueError("Invalid")
@@ -443,7 +443,7 @@ class TestDeadletterManagement:
 class TestManualDeadletterRetry:
     """Test manual retry of deadlettered documents."""
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
     def test_retry_deadletter_manual_success(self, mock_add):
         """Test successful manual deadletter retry."""
         mock_add.return_value = "doc_123"
@@ -460,7 +460,7 @@ class TestManualDeadletterRetry:
         # Result depends on deadletter queue implementation
         assert isinstance(result, bool)
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
     def test_retry_deadletter_updates_metrics(self, mock_add):
         """Test manual retry updates metrics."""
         mock_add.return_value = "doc_123"
@@ -478,7 +478,7 @@ class TestManualDeadletterRetry:
 class TestIntegrationIngestionWrapper:
     """Integration tests for resilient ingestion."""
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
     def test_full_workflow_single_document(self, mock_add):
         """Test full workflow for single document."""
         mock_add.return_value = "doc_123"
@@ -502,7 +502,7 @@ class TestIntegrationIngestionWrapper:
         deadletters = ingestion.get_deadletters()
         assert len(deadletters) == 0
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
     def test_full_workflow_batch_documents(self, mock_add):
         """Test full workflow for batch documents."""
         mock_add.side_effect = lambda doc_id, **kwargs: doc_id
@@ -524,8 +524,8 @@ class TestIntegrationIngestionWrapper:
         metrics = ingestion.get_metrics()
         assert metrics is not None
 
-    @patch('life_brain.db.ingestion_wrapper.add_to_life_brain')
-    @patch('life_brain.db.ingestion_wrapper.categorize_error')
+    @patch('life_brain.core.ingestion_wrapper.add_to_life_brain')
+    @patch('life_brain.core.ingestion_wrapper.categorize_error')
     def test_transient_then_success_workflow(self, mock_categorize, mock_add):
         """Test workflow: transient failure then successful retry."""
         # First call fails, subsequent succeed

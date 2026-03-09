@@ -11,7 +11,7 @@ from datetime import datetime
 from enum import Enum
 import time
 
-from life_brain.experts.roster import ExpertRoster, Expert
+from life_brain.conversation.expert_roster import ExpertRoster, Expert
 
 
 class PanelRole(Enum):

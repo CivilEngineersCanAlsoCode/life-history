@@ -16,7 +16,7 @@ from life_brain.conversation.panel_router import (
     PanelRole,
     PanelSession,
 )
-from life_brain.experts.roster import ExpertDomain
+from life_brain.conversation.expert_roster import ExpertDomain
 
 
 class OpposingPerspective(Enum):

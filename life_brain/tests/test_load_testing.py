@@ -13,7 +13,7 @@ import pytest
 from unittest.mock import Mock, MagicMock, patch
 import time
 
-from life_brain.performance import (
+from life_brain.testing import (
     LoadTestConfig,
     LoadTestResult,
     DocumentGenerator,
