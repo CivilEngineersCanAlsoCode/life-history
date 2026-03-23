@@ -6,10 +6,10 @@ from enum import Enum
 from typing import Dict, List
 
 # ──── CHROMADB ────
-CHROMA_PATH = "./life_brain_db"
-COLLECTION_NAME = "life_brain"
-EMBEDDING_MODEL = "text-embedding-3-small"  # OpenAI
-HNSW_SPACE = "cosine"
+# CHROMA_PATH removed — using MongoDB 8.2
+COLLECTION_NAME = "lifeos_vectors"  # MongoDB collection
+EMBEDDING_MODEL = "text-embedding-005"  # Gemini (free)
+# HNSW_SPACE removed — MongoDB cosine via mongot
 
 # ──── TRUTH ENGINE ────
 CONFLICT_THRESHOLDS = {

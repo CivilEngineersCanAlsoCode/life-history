@@ -1,16 +1,18 @@
 """
-Document ingestion pipeline — add Q&A pairs to ChromaDB with validation.
+Document ingestion pipeline — add Q&A pairs to MongoDB with validation.
+Migrated from ChromaDB to MongoDB 8.2 + mongot for vector search.
 """
 
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
-import uuid
 import logging
-import chromadb
+from datetime import datetime
+
+from pymongo.collection import Collection
 
 from life_brain.config import REQUIRED_METADATA_FIELDS, Privacy
 from life_brain.truth_engine.conflict import conflict_check, ConflictResult
-from life_brain.db.chromadb_init import ChromaDBManager
+from life_brain.db.mongodb_init import MongoDBManager, get_embedding
 
 logger = logging.getLogger(__name__)
 
@@ -22,247 +24,171 @@ class QAPair:
     answer: str
     doc_id: str
     metadata: Dict[str, Any]
-    alt_questions: Optional[List[str]] = None  # in tags
+    alt_questions: Optional[List[str]] = None
 
 
 def add_to_life_brain(
-    collection: chromadb.Collection,
+    collection: Collection,
     doc_id: str,
     text: str,
     metadata: Dict[str, Any]
 ) -> str:
     """
-    Add one atomic knowledge unit (Q&A pair) to ChromaDB.
+    Add one atomic knowledge unit (Q&A pair) to MongoDB lifeos_vectors.
 
     Flow:
     1. Validate required metadata fields
-    2. Validate text is self-contained
-    3. Run conflict_check() against existing pairs
-    4. If no conflict → upsert to collection
-    5. Return doc_id
+    2. Validate text is self-contained (>100 chars)
+    3. Generate Gemini embedding
+    4. Run conflict_check() via $vectorSearch
+    5. If no conflict → upsert to MongoDB
+    6. Return doc_id
 
     Args:
-        collection: ChromaDB collection
+        collection: MongoDB Collection (lifeos_vectors)
         doc_id: Unique document identifier
-        text: Self-contained Q&A pair text
+        text: Self-contained Q&A pair text (must be English)
         metadata: 47-field metadata dict
 
     Returns:
-        doc_id if inserted, or raises exception
+        doc_id if inserted
 
     Raises:
-        ValueError: If validation fails or conflict detected
+        ValueError: If validation fails or hard conflict detected
     """
-    try:
-        # Step 1: Validate required metadata fields
-        manager = ChromaDBManager()
-        manager.validate_required_fields(metadata)
-        logger.debug(f"Metadata validation passed for {doc_id}")
+    manager = MongoDBManager()
 
-        # Step 2: Validate text is self-contained (>100 chars, readable standalone)
-        if not text or len(text) < 100:
-            raise ValueError(f"Text must be >100 characters, got {len(text)}")
+    # Step 1: Validate required metadata fields
+    manager.validate_required_fields(metadata)
+    logger.debug(f"Metadata validation passed for {doc_id}")
 
-        # Check text doesn't look like just "Q: ... A: ..." without context
-        if text.lower().strip().startswith("q:") and text.count("a:") > 0:
-            # Allow Q&A format, but ensure each part has substance
-            parts = text.split("A:")
-            if len(parts[0]) < 50:  # Q part too short
-                raise ValueError("Answer section too brief for self-contained understanding")
+    # Step 2: Validate text is self-contained
+    if not text or len(text) < 100:
+        raise ValueError(f"Text must be >100 characters, got {len(text)}")
+    logger.debug(f"Text validation passed ({len(text)} chars)")
 
-        logger.debug(f"Text validation passed for {doc_id} ({len(text)} chars)")
+    # Step 3: Generate Gemini embedding
+    embedding = get_embedding(text)
+    logger.debug(f"Embedding generated: {len(embedding)}-dim")
 
-        # Step 3: Run conflict check against existing pairs
-        # Query collection for semantically similar documents
-        try:
-            # Query with the text to find similar entries
-            results = collection.query(
-                query_texts=[text],
-                n_results=5
+    # Step 4: Conflict check via MongoDB $vectorSearch
+    mgr = MongoDBManager()
+    mgr.client = collection.database.client
+    mgr.db = collection.database
+    mgr.collection = collection
+
+    similar_docs = mgr.vector_search(
+        query_embedding=embedding,
+        n_results=5,
+        filters={"metadata.domain": metadata.get("domain")} if metadata.get("domain") else None
+    )
+
+    if similar_docs:
+        existing_pairs = [
+            (doc.get("metadata", {}), doc.get("embedding", []))
+            for doc in similar_docs
+        ]
+        conflict_result = conflict_check(metadata, existing_pairs)
+
+        if conflict_result.status == "CONFLICT":
+            raise ValueError(
+                f"HARD CONFLICT (score: {conflict_result.conflict_score:.2f}). "
+                f"Existing: {conflict_result.existing_answer}. "
+                f"Resolve manually before inserting."
+            )
+        elif conflict_result.status == "SOFT_CONFLICT":
+            logger.warning(
+                f"SOFT CONFLICT (score: {conflict_result.conflict_score:.2f}). "
+                f"Inserting with warning — review recommended."
             )
 
-            if results and results.get("ids") and len(results["ids"]) > 0:
-                # Construct existing_pairs list from query results
-                existing_pairs = []
-                for i, result_id in enumerate(results["ids"][0]):
-                    existing_metadata = results["metadatas"][0][i] if results.get("metadatas") else {}
-                    existing_embedding = results["embeddings"][0][i] if results.get("embeddings") else []
-                    existing_pairs.append((existing_metadata, existing_embedding))
-
-                # Check for conflicts
-                conflict_result = conflict_check(metadata, existing_pairs)
-
-                if conflict_result.status == "CONFLICT":
-                    # Hard conflict detected
-                    raise ValueError(
-                        f"HARD CONFLICT detected (score: {conflict_result.conflict_score:.2f}). "
-                        f"Existing answer: {conflict_result.existing_answer}. "
-                        f"Resolve manually using resolve_conflict_with_user()."
-                    )
-
-                elif conflict_result.status == "SOFT":
-                    # Soft conflict detected - warn but allow with log
-                    logger.warning(
-                        f"SOFT CONFLICT for {doc_id} (score: {conflict_result.conflict_score:.2f}). "
-                        f"Existing: {conflict_result.existing_answer[:100]}... "
-                        f"Proceeding with insertion."
-                    )
-
-                elif conflict_result.status == "ENRICHMENT":
-                    # Enrichment detected - this is OK, auto-update
-                    logger.info(
-                        f"ENRICHMENT detected for {doc_id} (score: {conflict_result.conflict_score:.2f}). "
-                        f"Will update existing entry."
-                    )
-
-                # SAFE status: proceed normally
-
-                logger.debug(f"Conflict check passed: {conflict_result.status}")
-
-        except Exception as conflict_error:
-            # If conflict check fails, log but don't block (first-run scenario)
-            logger.warning(f"Conflict check skipped (likely empty collection): {conflict_error}")
-
-        # Step 4: Upsert to ChromaDB
-        collection.upsert(
-            ids=[doc_id],
-            metadatas=[metadata],
-            documents=[text]
-        )
-
-        logger.info(f"Successfully ingested: {doc_id}")
-        return doc_id
-
-    except ValueError as e:
-        logger.error(f"Validation failed for {doc_id}: {e}")
-        raise
-    except Exception as e:
-        logger.error(f"Ingestion failed for {doc_id}: {e}")
-        raise RuntimeError(f"Failed to add document to ChromaDB: {e}")
+    # Step 5: Upsert to MongoDB
+    doc = {
+        "doc_id": doc_id,
+        "text": text,
+        "embedding": embedding,
+        "metadata": metadata,
+        "inserted_at": datetime.utcnow().isoformat(),
+        "schema_version": metadata.get("schema_version", 1),
+    }
+    collection.update_one(
+        {"doc_id": doc_id},
+        {"$set": doc},
+        upsert=True
+    )
+    logger.info(f"Upserted doc: {doc_id}")
+    return doc_id
 
 
-def batch_ingest(
-    collection: chromadb.Collection,
+def batch_add_to_life_brain(
+    collection: Collection,
     pairs: List[QAPair]
 ) -> Dict[str, Any]:
     """
-    Batch insert multiple Q&A pairs.
+    Add multiple Q&A pairs with progress tracking.
 
-    Returns summary: {inserted: count, skipped: count, conflicts: list}
-    """
-    inserted = []
-    skipped = []
-    conflicts = []
-
-    for pair in pairs:
-        try:
-            # Format text as "Q: {question}\nA: {answer}"
-            text = f"Q: {pair.question}\nA: {pair.answer}"
-
-            # Attempt ingestion
-            doc_id = add_to_life_brain(
-                collection=collection,
-                doc_id=pair.doc_id,
-                text=text,
-                metadata=pair.metadata
-            )
-
-            inserted.append({
-                "doc_id": doc_id,
-                "question": pair.question
-            })
-
-        except ValueError as e:
-            # Conflict detected - collect for review
-            if "CONFLICT" in str(e) or "SOFT" in str(e):
-                conflicts.append({
-                    "doc_id": pair.doc_id,
-                    "question": pair.question,
-                    "error": str(e)
-                })
-                logger.warning(f"Conflict in batch: {pair.doc_id}")
-            else:
-                # Validation error - skip
-                skipped.append({
-                    "doc_id": pair.doc_id,
-                    "question": pair.question,
-                    "reason": str(e)
-                })
-                logger.error(f"Skipped due to validation: {pair.doc_id}")
-
-        except Exception as e:
-            # Other errors - skip and log
-            skipped.append({
-                "doc_id": pair.doc_id,
-                "question": pair.question,
-                "reason": f"Ingestion error: {str(e)}"
-            })
-            logger.error(f"Skipped due to error: {pair.doc_id}")
-
-    return {
-        "total": len(pairs),
-        "inserted": len(inserted),
-        "skipped": len(skipped),
-        "conflicts": len(conflicts),
-        "inserted_details": inserted,
-        "skipped_details": skipped,
-        "conflicts_details": conflicts,
-        "success_rate": (len(inserted) / len(pairs) * 100) if pairs else 0
-    }
-
-
-def validate_document_batch(pairs: List[QAPair]) -> Tuple[List[str], List[Tuple[str, str]]]:
-    """
-    Validate entire batch for duplicates and structural issues.
+    Args:
+        collection: MongoDB Collection
+        pairs: List of QAPair objects
 
     Returns:
-        Tuple of (valid_doc_ids, invalid_docs_with_reasons)
+        Summary: {inserted, skipped, errors}
     """
-    valid_ids = []
-    invalid_docs = []
-
-    manager = ChromaDBManager()
+    results = {"inserted": 0, "skipped": 0, "errors": []}
 
     for pair in pairs:
-        errors = []
-
-        # Check required fields in metadata
-        try:
-            manager.validate_required_fields(pair.metadata)
-        except ValueError as e:
-            errors.append(str(e))
-
-        # Check text quality
         text = f"Q: {pair.question}\nA: {pair.answer}"
-        if len(text) < 100:
-            errors.append(f"Text too short: {len(text)} chars (min 100)")
+        try:
+            add_to_life_brain(collection, pair.doc_id, text, pair.metadata)
+            results["inserted"] += 1
+        except ValueError as e:
+            if "CONFLICT" in str(e):
+                results["skipped"] += 1
+                logger.warning(f"Skipped {pair.doc_id}: {e}")
+            else:
+                results["errors"].append({"doc_id": pair.doc_id, "error": str(e)})
+                logger.error(f"Error on {pair.doc_id}: {e}")
 
-        if not pair.question or len(pair.question) < 5:
-            errors.append("Question too short")
+    return results
 
-        if not pair.answer or len(pair.answer) < 10:
-            errors.append("Answer too short")
 
-        # Check for duplicates within batch
-        duplicate_in_batch = [
-            p for p in pairs
-            if p.doc_id != pair.doc_id and
-            p.question.lower() == pair.question.lower()
-        ]
-        if duplicate_in_batch:
-            errors.append(f"Duplicate question in batch: {duplicate_in_batch[0].doc_id}")
+def query_life_brain(
+    collection: Collection,
+    query_text: str,
+    filters: Optional[Dict] = None,
+    n_results: int = 10,
+    min_score: float = 0.70
+) -> List[Dict]:
+    """
+    Semantic search over lifeos_vectors.
 
-        # Classify
-        if errors:
-            invalid_docs.append((pair.doc_id, "; ".join(errors)))
-            logger.warning(f"Invalid doc {pair.doc_id}: {errors}")
-        else:
-            valid_ids.append(pair.doc_id)
-            logger.debug(f"Valid doc: {pair.doc_id}")
+    Args:
+        collection: MongoDB Collection
+        query_text: English query text
+        filters: MongoDB metadata filters (e.g., {"metadata.domain": "career"})
+        n_results: Max results
+        min_score: Minimum cosine similarity score
 
-    logger.info(
-        f"Batch validation: {len(valid_ids)} valid, {len(invalid_docs)} invalid "
-        f"out of {len(pairs)} total"
+    Returns:
+        List of matching docs with score + metadata
+    """
+    query_embedding = get_embedding(query_text)
+
+    mgr = MongoDBManager()
+    mgr.client = collection.database.client
+    mgr.db = collection.database
+    mgr.collection = collection
+
+    results = mgr.vector_search(
+        query_embedding=query_embedding,
+        n_results=n_results,
+        filters=filters
     )
 
-    return valid_ids, invalid_docs
+    # Filter by minimum score
+    filtered = [r for r in results if r.get("score", 0) >= min_score]
+
+    if not filtered:
+        logger.info(f"No results above {min_score} for: {query_text[:50]}")
+
+    return filtered

@@ -14,7 +14,7 @@ from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime
 import numpy as np
-from anthropic import Anthropic
+from life_brain.utils.claude_cli import Anthropic  # Claude CLI, no API key needed
 
 from life_brain.config import (
     CONFLICT_THRESHOLDS,
@@ -470,7 +470,7 @@ def resolve_conflict_with_user(
     Returns:
         User's choice (A, B, C, D)
     """
-    from anthropic import Anthropic
+    from life_brain.utils.claude_cli import Anthropic  # Claude CLI, no API key needed
 
     prompt = f"""Ruko ek second —
 

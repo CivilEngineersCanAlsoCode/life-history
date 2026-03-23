@@ -9,7 +9,7 @@ Technical terms (CRR, AML, API, Sprinklr) preserved as-is.
 
 from typing import Optional, List
 import os
-from anthropic import Anthropic
+from life_brain.utils.claude_cli import Anthropic  # Claude CLI, no API key needed
 
 from life_brain.config import PRESERVED_TERMS
 

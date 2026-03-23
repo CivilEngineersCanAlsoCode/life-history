@@ -6,7 +6,7 @@ Also: Intent detection to proactively suggest experts even in small talk.
 
 from typing import Optional, Tuple, Dict, Any
 from enum import Enum
-from anthropic import Anthropic
+from life_brain.utils.claude_cli import Anthropic  # Claude CLI, no API key needed
 import logging
 
 logger = logging.getLogger(__name__)

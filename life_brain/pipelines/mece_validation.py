@@ -7,7 +7,7 @@ CE check: Verify all structural elements from raw answer are captured
 
 from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
-from anthropic import Anthropic
+from life_brain.utils.claude_cli import Anthropic  # Claude CLI, no API key needed
 
 from life_brain.extraction.nuggets import Nugget
 

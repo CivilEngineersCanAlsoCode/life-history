@@ -6,7 +6,7 @@ One nugget (subject + predicate) → Multiple question phrasings + one answer
 
 from typing import List, Dict, Any, Optional
 import json
-from anthropic import Anthropic
+from life_brain.utils.claude_cli import Anthropic  # Claude CLI, no API key needed
 
 from life_brain.extraction.nuggets import Nugget
 

@@ -7,7 +7,7 @@ Metrics ALWAYS separate nuggets
 
 from typing import List, Optional
 from dataclasses import dataclass
-from anthropic import Anthropic
+from life_brain.utils.claude_cli import Anthropic  # Claude CLI, no API key needed
 
 
 @dataclass

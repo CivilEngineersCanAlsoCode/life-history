@@ -9,7 +9,7 @@ Implements:
 
 from typing import Dict, List, Tuple, Optional, Any
 import logging
-from anthropic import Anthropic
+from life_brain.utils.claude_cli import Anthropic  # Claude CLI, no API key needed
 
 from life_brain.conversation.use_cases import (
     USE_CASES,
