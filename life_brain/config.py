@@ -8,7 +8,9 @@ from typing import Dict, List
 # ──── CHROMADB ────
 # CHROMA_PATH removed — using MongoDB 8.2
 COLLECTION_NAME = "lifeos_vectors"  # MongoDB collection
-EMBEDDING_MODEL = "text-embedding-005"  # Gemini (free)
+EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5"  # BGE local, 768-dim, CPU-only
+EMBEDDING_DIM = 768  # BGE-base-en-v1.5
+EMBEDDING_PREFIX = "Represent this sentence: "  # BGE retrieval prefix
 # HNSW_SPACE removed — MongoDB cosine via mongot
 
 # ──── TRUTH ENGINE ────
