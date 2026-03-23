@@ -80,7 +80,7 @@ def add_to_life_brain(
     similar_docs = mgr.vector_search(
         query_embedding=embedding,
         n_results=5,
-        filters={"metadata.domain": metadata.get("domain")} if metadata.get("domain") else None
+        filters=None  # filter on top-level fields only if needed later
     )
 
     if similar_docs:

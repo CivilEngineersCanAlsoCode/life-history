@@ -3,16 +3,15 @@ MongoDB initialization and collection management.
 Replaces chromadb_init.py — same interface, MongoDB 8.2 + mongot backend.
 
 Collection: db=linkright, collection=lifeos_vectors
-Vector index: mongot $vectorSearch (cosine, 3072-dim Gemini embeddings)
+Vector index: mongot $vectorSearch (cosine, 768-dim BGE-base-en-v1.5)
 """
 
 from typing import Dict, Any, Optional, List
 import logging
-import subprocess
-import json
 
 from pymongo import MongoClient
 from pymongo.collection import Collection
+from sentence_transformers import SentenceTransformer
 
 from life_brain.config import (
     REQUIRED_METADATA_FIELDS, TIER_1_FIELDS, TIER_2_FIELDS,
@@ -26,48 +25,34 @@ logger = logging.getLogger(__name__)
 MONGO_URI = "mongodb://localhost:27017/?directConnection=true"
 DB_NAME = "linkright"
 COLLECTION_NAME = "lifeos_vectors"
-VECTOR_INDEX_NAME = "vector_index"   # matches all existing LinkRight collections
-EMBEDDING_DIM = 1024     # matches all existing linkright.* vector indexes
-EMBEDDING_MODEL = "text-embedding-005"  # Gemini CLI (output_dimensionality=1024)
+VECTOR_INDEX_NAME = "vector_index"
+EMBEDDING_DIM = 768
+EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5"
 
+# ──── BGE Embedding ──────────────────────────────────────────────────────────
+_bge_model: Optional[SentenceTransformer] = None
 
-# ──── Gemini Embedding ───────────────────────────────────────────────────────
+def _get_model() -> SentenceTransformer:
+    global _bge_model
+    if _bge_model is None:
+        logger.info("Loading BGE model (one-time)...")
+        _bge_model = SentenceTransformer(EMBEDDING_MODEL)
+    return _bge_model
 
 def get_embedding(text: str) -> List[float]:
     """
-    Generate embedding via Gemini CLI (free, already configured on EC2).
+    Generate embedding via BGE-base-en-v1.5 (local, no API limits).
 
     Args:
-        text: English text to embed (always English — Hinglish translated before calling)
+        text: English text to embed
 
     Returns:
-        List of 3072 floats (Gemini text-embedding-005)
-
-    Raises:
-        RuntimeError: If Gemini CLI fails
+        List of 768 floats (normalized cosine-ready)
     """
-    prompt = f"Embed this text for semantic search: {text}"
-    result = subprocess.run(
-        ["gemini", "--model", EMBEDDING_MODEL, "--embed", text],
-        capture_output=True, text=True, timeout=30
-    )
-    if result.returncode != 0:
-        # Fallback: use claude CLI with embedding request
-        result = subprocess.run(
-            ["claude", "--print", f"Return ONLY a JSON array of {EMBEDDING_DIM} floats "
-             f"representing the embedding of: {text[:500]}"],
-            capture_output=True, text=True, timeout=60
-        )
-        if result.returncode != 0:
-            raise RuntimeError(f"Embedding failed: {result.stderr}")
-
-    try:
-        embedding = json.loads(result.stdout.strip())
-        if not isinstance(embedding, list) or len(embedding) != EMBEDDING_DIM:
-            raise ValueError(f"Expected {EMBEDDING_DIM}-dim vector, got {len(embedding)}")
-        return embedding
-    except (json.JSONDecodeError, ValueError) as e:
-        raise RuntimeError(f"Failed to parse embedding output: {e}")
+    model = _get_model()
+    prefixed = f"Represent this sentence: {text}"
+    vec = model.encode(prefixed, normalize_embeddings=True)
+    return vec.tolist()
 
 
 # ──── MongoDBManager ─────────────────────────────────────────────────────────
